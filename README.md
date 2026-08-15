@@ -3,7 +3,8 @@
 Статический сайт-визитка. Astro + Tailwind, без бэкенда, без базы, без аналитики
 и без единого запроса на сторонние домены.
 
-Сейчас готов лендинг. Devlog и страница загрузок — следующие шаги.
+Готовы лендинг, devlog с RSS и страница источников. Страница загрузок ждёт,
+пока появится что скачивать.
 
 ---
 
@@ -62,20 +63,27 @@ python scripts/build-fonts.py   # ttf -> woff2 в src/assets/fonts/
 ```
 astro.config.mjs        site и base — единственное, что правится под хостинг
 src/
-  config.ts             адрес репозитория, тексты фактов — всё правится здесь
+  config.ts             адрес репозитория, факты о сборке (и цвет для них)
+  content.config.ts     схема постов devlog, проверяется на сборке
+  content/devlog/       посты — обычные .md, имя файла = адрес
   lib/paths.ts          asset() и href() — склейка путей с учётом base
-  styles/global.css     палитра из style-guide + @font-face
+  lib/devlog.ts         выборка постов: сортировка и отсев черновиков
+  styles/global.css     палитра из style-guide, @font-face, стили прозы
   assets/fonts/         woff2 (их обрабатывает Vite: хеш + base)
   layouts/Base.astro    шапка, подвал, метатеги
-  components/           HeroVideo, Screenshots
-  data/shots.json       размеры скриншотов, генерится build-media.mjs
+  components/           HeroVideo, Screenshots, Shot
+  data/media.json       размеры героя и снимков, генерится build-media.mjs
   pages/index.astro     лендинг
-  pages/devlog/         пока заглушка
+  pages/devlog/         список и [...slug]
+  pages/credits.astro   источники и инструменты
+  pages/rss.xml.ts      лента
+  pages/robots.txt.ts   robots со ссылкой на карту сайта
+  pages/404.astro
 public/                 отдаётся как есть: media/, favicon.svg, .nojekyll
 media-src/              исходники (в .gitignore, см. ниже)
 vendor/                 вариативная Manrope + лицензии OFL
 scripts/                build-media.mjs, build-fonts.py
-docs/                   библия и style-guide
+docs/                   библия, style-guide, план доработок
 ```
 
 ### Почему `media-src/` в `.gitignore`
@@ -127,8 +135,9 @@ screen_gameplay_01.gif   73.9 МБ
 
 ## Деплой
 
-Ниже — то, что обычно и ломается. Файл workflow **намеренно не создан**:
-разберитесь, что он делает, и добавьте осознанно.
+Настроено и работает: пуш в `main` пересобирает и публикует сайт.
+Ниже — как оно устроено и что здесь обычно ломается.
+Сам workflow — в `.github/workflows/deploy.yml`, с построчными пояснениями.
 
 ### Две настройки, от которых всё зависит
 
