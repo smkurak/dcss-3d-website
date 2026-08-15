@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
 // --- Деплой -----------------------------------------------------------------
@@ -23,6 +24,10 @@ export default defineConfig({
     // Ссылки в собранной статике — относительные к base, а не абсолютные к домену.
     format: 'directory',
   },
+  // Карта сайта собирается из готовых страниц, адреса берутся из site + base.
+  // Ссылку на неё отдаёт src/pages/robots.txt.ts.
+  integrations: [sitemap()],
+
   server: {
     // Явный IPv4. По умолчанию Astro слушает `localhost`, а node на Windows
     // резолвит его в ::1 и биндится только туда — браузер при этом идёт

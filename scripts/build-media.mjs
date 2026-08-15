@@ -24,7 +24,14 @@ const SRC = join(ROOT, 'media-src');
 const OUT = join(ROOT, 'public', 'media');
 // Манифест с размерами: чтобы в разметке стояли настоящие width/height
 // (без них картинки при загрузке дёргают вёрстку), а руками их не поддерживать.
-const MANIFEST = join(ROOT, 'src', 'data', 'shots.json');
+// Сюда же пишутся размеры героя — иначе соотношение сторон приходится дублировать
+// в компоненте, и при пережатии из другого исходника рамка молча поедет.
+const MANIFEST = join(ROOT, 'src', 'data', 'media.json');
+
+// Карточка для соцсетей. 1200×630 — то, что ждут скреперы; webp понимают
+// не все (Telegram, часть RSS-читалок), поэтому jpg.
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 630;
 
 // Ширина героя. 1440 хватает: на десктопе видео шире 1200 не показывается,
 // на телефоне уходит в down-scale. Больше — только лишние байты.
@@ -78,6 +85,17 @@ function buildHero() {
   ffmpeg(['-ss', '1.0', '-i', src, '-vframes', '1', '-vf', scale,
     '-c:v', 'libwebp', '-quality', '72', join(OUT, 'hero-poster.webp')]);
   console.log(`   hero-poster.webp  ${kb(join(OUT, 'hero-poster.webp'))} КБ`);
+
+  // Карточка для соцсетей. Кадр вписывается по высоте и добивается по бокам
+  // цветом фона окна (#252526) — так виден весь интерфейс целиком. Кроп
+  // срезал бы верхнюю и нижнюю панели, а это ровно то, что показывать и надо.
+  ffmpeg(['-ss', '1.0', '-i', src, '-vframes', '1',
+    '-vf', `scale=-2:${OG_HEIGHT}:flags=lanczos,` +
+           `pad=${OG_WIDTH}:${OG_HEIGHT}:(ow-iw)/2:0:color=0x252526`,
+    '-q:v', '3', join(OUT, 'og-card.jpg')]);
+  console.log(`   og-card.jpg       ${kb(join(OUT, 'og-card.jpg'))} КБ  ${OG_WIDTH}x${OG_HEIGHT}`);
+
+  return probeSize(join(OUT, 'hero.webm'));
 }
 
 function probeSize(file) {
@@ -89,7 +107,7 @@ function probeSize(file) {
 
 function buildShots() {
   const shots = readdirSync(SRC).filter((f) => /^screen__\d+\.png$/i.test(f)).sort();
-  if (!shots.length) return;
+  if (!shots.length) return [];
   console.log(`скриншоты: ${shots.length} шт.`);
 
   const manifest = [];
@@ -108,13 +126,27 @@ function buildShots() {
     manifest.push({ id: stem, width: w, height: h, widths: SHOT_WIDTHS });
   }
 
-  mkdirSync(dirname(MANIFEST), { recursive: true });
-  writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
-  console.log(`   -> src/data/shots.json (${manifest.length} записей)`);
+  return manifest;
 }
 
 requireFfmpeg();
 mkdirSync(OUT, { recursive: true });
-buildHero();
-buildShots();
+
+const hero = buildHero();
+const shots = buildShots();
+
+// Манифест перезаписывается целиком, поэтому пишем его только когда собралось
+// и то и другое: иначе неудачный запуск (нет исходника) молча обнулил бы
+// размеры и уронил сборку сайта.
+if (hero && shots.length) {
+  mkdirSync(dirname(MANIFEST), { recursive: true });
+  writeFileSync(
+    MANIFEST,
+    JSON.stringify({ hero: { width: hero.w, height: hero.h }, shots }, null, 2) + '\n',
+  );
+  console.log(`-> src/data/media.json (герой ${hero.w}x${hero.h}, снимков ${shots.length})`);
+} else {
+  console.error('!! манифест не перезаписан: собралось не всё');
+}
+
 console.log('готово -> public/media/');

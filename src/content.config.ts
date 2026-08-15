@@ -1,5 +1,9 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+// zod импортируется напрямую: реэкспорт `z` из astro:content в Astro 7
+// помечен устаревшим. Пакет прописан в зависимостях явно и дедуплицирован
+// с тем, что тянет сам Astro (одна копия — иначе схемы не пройдут проверку).
+import { z } from 'zod';
 
 /**
  * Devlog — обычные markdown-файлы в src/content/devlog/.
