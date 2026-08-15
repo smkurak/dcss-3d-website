@@ -1,20 +1,16 @@
 ---
 import media from '../data/media.json';
-import { asset } from '../lib/paths';
+import Shot from './Shot.astro';
 
 const shots = media.shots;
 
 /**
- * Скриншоты. Размеры берутся из src/data/shots.json — его пишет
+ * Скриншоты. Размеры берутся из src/data/media.json — его пишет
  * scripts/build-media.mjs, поэтому width/height всегда настоящие
  * и картинки не дёргают вёрстку при загрузке.
  *
  * Подписи и alt — руками: только то, что на снимке действительно есть.
- *
- * Каждый снимок — ссылка на вариант 1600px. В сетке снимок шириной 472px,
- * а интерфейс в игре текстовый: главный вопрос проекта — «видно ли не хуже,
- * чем в оригинале» — на превью просто не проверить. Ссылка вместо лайтбокса:
- * на сайте один скрипт (пауза видео), и заводить второй ради этого не за что.
+ * Вёрстка одной панели живёт в Shot.astro.
  */
 
 const captions: Record<string, { alt: string; caption: string }> = {
@@ -49,17 +45,6 @@ const captions: Record<string, { alt: string; caption: string }> = {
   },
 };
 
-const srcset = (id: string, widths: number[]) =>
-  widths
-    .slice()
-    .sort((a, b) => a - b)
-    .map((w) => `${asset(`media/${id}-${w}.webp`)} ${w}w`)
-    .join(', ');
-
-/** Самый широкий вариант — тот, что открывается по клику. */
-const full = (id: string, widths: number[]) =>
-  asset(`media/${id}-${Math.max(...widths)}.webp`);
-
 const [lead, ...rest] = shots;
 ---
 
@@ -67,58 +52,24 @@ const [lead, ...rest] = shots;
   <h2 id="shots-heading" class="sr-only">Screenshots</h2>
 
   <div class="flex flex-col gap-4">
-    <figure>
-      <a
-        href={full(lead.id, lead.widths)}
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Open full size"
-        class="group block"
-      >
-        <img
-          src={asset(`media/${lead.id}-1600.webp`)}
-          srcset={srcset(lead.id, lead.widths)}
-          sizes="(min-width: 1024px) 960px, 100vw"
-          width={lead.width}
-          height={lead.height}
-          alt={captions[lead.id]?.alt ?? ''}
-          loading="lazy"
-          decoding="async"
-          class="block w-full rounded border border-rule/60 bg-panel transition-colors group-hover:border-ink-dim"
-        />
-      </a>
-      <figcaption class="mt-2 font-mono text-xs text-ink-dim">
-        {captions[lead.id]?.caption}
-      </figcaption>
-    </figure>
+    <Shot
+      shot={lead}
+      alt={captions[lead.id]?.alt ?? ''}
+      caption={captions[lead.id]?.caption ?? ''}
+      fallbackWidth={1600}
+      sizes="(min-width: 1024px) 960px, 100vw"
+    />
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {
         rest.map((shot) => (
-          <figure>
-            <a
-              href={full(shot.id, shot.widths)}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open full size"
-              class="group block"
-            >
-              <img
-                src={asset(`media/${shot.id}-800.webp`)}
-                srcset={srcset(shot.id, shot.widths)}
-                sizes="(min-width: 1024px) 472px, (min-width: 640px) 50vw, 100vw"
-                width={shot.width}
-                height={shot.height}
-                alt={captions[shot.id]?.alt ?? ''}
-                loading="lazy"
-                decoding="async"
-                class="block w-full rounded border border-rule/60 bg-panel transition-colors group-hover:border-ink-dim"
-              />
-            </a>
-            <figcaption class="mt-2 font-mono text-xs text-ink-dim">
-              {captions[shot.id]?.caption}
-            </figcaption>
-          </figure>
+          <Shot
+            shot={shot}
+            alt={captions[shot.id]?.alt ?? ''}
+            caption={captions[shot.id]?.caption ?? ''}
+            fallbackWidth={800}
+            sizes="(min-width: 1024px) 472px, (min-width: 640px) 50vw, 100vw"
+          />
         ))
       }
     </div>

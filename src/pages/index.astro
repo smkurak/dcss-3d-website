@@ -3,6 +3,12 @@ import Base from '../layouts/Base.astro';
 import HeroVideo from '../components/HeroVideo.astro';
 import Screenshots from '../components/Screenshots.astro';
 import { specs } from '../config';
+
+const toneClass = {
+  none: 'text-ink',
+  hp: 'text-hp',
+  warning: 'text-warning',
+} as const;
 import { href } from '../lib/paths';
 
 /**
@@ -122,7 +128,10 @@ const sections = [
         specs.map((spec) => (
           <div class="flex gap-4 py-2">
             <dt class="w-24 shrink-0 text-ink-dim">{spec.key}</dt>
-            <dd class="text-ink">{spec.value}</dd>
+            {/* Классы перечислены строками, а не собраны из tone: Tailwind
+                ищет их в исходнике и вычисленное имя вроде `text-${tone}`
+                не увидит — правило вообще не попадёт в CSS. */}
+            <dd class={toneClass[spec.tone ?? 'none']}>{spec.value}</dd>
           </div>
         ))
       }

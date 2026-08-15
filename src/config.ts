@@ -28,11 +28,22 @@ export const site = {
  * Технические факты для строки под текстом. Набраны моноширинным —
  * по правилу из style-guide.md: моноширинный несёт техническое, гротеск — наше.
  */
-export const specs: ReadonlyArray<{ key: string; value: string }> = [
+/**
+ * `tone` — цвет как признак смысла, ровно как в клиенте, где зелёный это
+ * HP, а оранжевый — предупреждение. Раскрашены две строки, и намеренно
+ * противоположные: что стоит незыблемо и что в движении. Это и есть главный
+ * тезис проекта — асимметрия вклада. Больше двух точек — уже имитация
+ * интерфейса, а не сходство с ним.
+ */
+export const specs: ReadonlyArray<{
+  key: string;
+  value: string;
+  tone?: 'hp' | 'warning';
+}> = [
   { key: 'engine', value: 'Unity' },
-  { key: 'game logic', value: 'upstream, unmodified' },
+  { key: 'game logic', value: 'upstream, unmodified', tone: 'hp' },
   { key: 'built here', value: 'renderer + UI' },
-  { key: 'status', value: 'in development' },
+  { key: 'status', value: 'in development', tone: 'warning' },
   // Эти две строки отвечают на вопросы, которые иначе задаст каждый пришедший:
   // «где код» и «как попробовать». Ответ «пока никак» честнее молчания и
   // честнее кнопки, которая никуда не ведёт. Менять по мере готовности.

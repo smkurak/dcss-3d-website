@@ -1,0 +1,65 @@
+---
+import { asset } from '../lib/paths';
+
+/**
+ * Один скриншот, свёрстанный как панель интерфейса клиента.
+ *
+ * Подпись стоит НАД снимком и внутри рамки — так в самом клиенте устроены
+ * заголовки панелей («Map», «Quick cast (Ctrl+1-9)», «Spells (F11)»).
+ * Раньше подпись висела отдельной строкой под рамкой, и снимок читался как
+ * картинка в рамке, а не как часть интерфейса.
+ *
+ * Снимок — ссылка на вариант максимальной ширины: в сетке он 472px, а
+ * интерфейс в игре текстовый, и главный вопрос проекта — «видно ли не хуже,
+ * чем в оригинале» — на превью не проверить.
+ */
+
+interface Props {
+  shot: { id: string; width: number; height: number; widths: number[] };
+  alt: string;
+  caption: string;
+  /** Ширина варианта для атрибута src (фолбэк, если srcset не поддержан). */
+  fallbackWidth: number;
+  /** Значение sizes — считается от реальной ширины контейнера. */
+  sizes: string;
+}
+
+const { shot, alt, caption, fallbackWidth, sizes } = Astro.props;
+
+const srcset = shot.widths
+  .slice()
+  .sort((a, b) => a - b)
+  .map((w) => `${asset(`media/${shot.id}-${w}.webp`)} ${w}w`)
+  .join(', ');
+
+const full = asset(`media/${shot.id}-${Math.max(...shot.widths)}.webp`);
+---
+
+{/*
+  has-[a:hover] вместо group-hover: подсветить надо рамку самой панели, а
+  она на <figure>, тогда как ссылка лежит внутри. Так рамка реагирует именно
+  на наведение по снимку, а не по подписи, где курсор обычный.
+*/}
+<figure
+  class="overflow-hidden rounded border border-rule/60 bg-panel transition-colors has-[a:hover]:border-ink-dim"
+>
+  <figcaption
+    class="border-b border-rule/30 px-3 py-1.5 font-mono text-xs text-ink-dim"
+  >
+    {caption}
+  </figcaption>
+
+  <a href={full} target="_blank" rel="noopener noreferrer" title="Open full size" class="block">
+    <img
+      src={asset(`media/${shot.id}-${fallbackWidth}.webp`)}
+      srcset={srcset}
+      sizes={sizes}
+      width={shot.width}
+      height={shot.height}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      class="block w-full"
+    />
+  </a>
+</figure>
