@@ -42,6 +42,16 @@ const here = strip(Astro.url.pathname);
     <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
     <meta name="theme-color" content="#252526" />
 
+    <!-- Автообнаружение ленты: читалки ищут именно этот тег, а не ссылку
+         в подвале. Стоит на всех страницах, чтобы подписаться можно было
+         с любой. -->
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${site.name} — devlog`}
+      href={asset('rss.xml')}
+    />
+
     <!-- Заголовок первого экрана набран Manrope, то есть шрифт участвует в LCP.
          Без preload браузер узнаёт о нём только разобрав CSS — на лишний круг
          позже. crossorigin обязателен даже для своего домена: шрифты всегда
@@ -122,17 +132,26 @@ const here = strip(Astro.url.pathname);
       <div
         class="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-10 text-sm text-ink-dim sm:flex-row sm:items-start sm:justify-between sm:px-8"
       >
-        <p class="max-w-md leading-relaxed">
-          The game itself — rules, content and two decades of work — is
-          {' '}
-          <a
-            href={site.upstream}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
-            >{site.upstreamName}</a
-          >, by its own team. This project only renders it.
-        </p>
+        <div class="max-w-md">
+          <p class="leading-relaxed">
+            The game itself — rules, content and two decades of work — is
+            {' '}
+            <a
+              href={site.upstream}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
+              >{site.upstreamName}</a
+            >, by its own team. This project only renders it.
+          </p>
+          <p class="mt-2">
+            <a
+              href={href('/credits')}
+              class="underline decoration-rule underline-offset-4 transition-colors hover:text-ink"
+              >Credits — the game, the tools, the typefaces</a
+            >
+          </p>
+        </div>
 
         {/* Подписано явно: это исходники сайта, а не клиента. Без подписи
             голая ссылка на репозиторий читается как «код проекта». */}
@@ -143,6 +162,11 @@ const here = strip(Astro.url.pathname);
             target="_blank"
             rel="noopener noreferrer"
             class="transition-colors hover:text-ink">{site.repo}</a
+          >
+          <br />
+          <a
+            href={asset('rss.xml')}
+            class="transition-colors hover:text-ink">rss.xml</a
           >
           <br />
           <span>no trackers, no third-party requests</span>

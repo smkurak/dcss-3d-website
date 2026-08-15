@@ -1,0 +1,140 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../config';
+
+/**
+ * Источники и инструменты.
+ *
+ * Для этого проекта страница не формальность: ключевой принцип из библии —
+ * асимметрия вклада. Игра целиком чужая, своё здесь только рендер и интерфейс.
+ * Проговорить это списком честнее, чем одной ссылкой в подвале.
+ *
+ * `meta` набирается моноширинным (лицензии, авторы — машинная справка),
+ * `note` — гротеском, это наш текст.
+ */
+interface Item {
+  name: string;
+  url: string;
+  meta?: string;
+  note?: string;
+}
+
+const groups: Array<{ title: string; lead?: string; items: Item[] }> = [
+  {
+    title: 'The game',
+    lead:
+      'Everything you actually play — rules, mechanics, balance, dungeon generation, ' +
+      'monster behaviour, every line of item and spell text — comes from upstream ' +
+      'and is not modified here.',
+    items: [
+      {
+        name: 'Dungeon Crawl Stone Soup',
+        url: 'https://github.com/crawl/crawl',
+        meta: 'GPL v2 or later · © 1997–2025 Linley Henzell, the dev team and contributors',
+      },
+    ],
+  },
+  {
+    title: 'Built with',
+    items: [
+      { name: 'Unity', url: 'https://unity.com', note: 'engine and renderer for the client' },
+      { name: 'Astro', url: 'https://astro.build', note: 'this site' },
+      { name: 'Tailwind CSS', url: 'https://tailwindcss.com', note: 'styles' },
+      { name: 'ffmpeg', url: 'https://ffmpeg.org', note: 'the clip and the screenshots' },
+    ],
+  },
+  {
+    title: 'Typefaces',
+    lead:
+      'Both are the same files the client interface uses, subset and served from ' +
+      'this domain — no font is fetched from anywhere else.',
+    items: [
+      {
+        name: 'Iosevka',
+        url: 'https://typeof.net/Iosevka/',
+        meta: 'SIL OFL 1.1 · © Renzhi Li',
+        note: 'anything the machine says',
+      },
+      {
+        name: 'Manrope',
+        url: 'https://github.com/sharanda/manrope',
+        meta: 'SIL OFL 1.1 · © The Manrope Project Authors',
+        note: 'anything we say',
+      },
+    ],
+  },
+  {
+    title: 'Hosting',
+    items: [
+      {
+        name: 'GitHub Pages',
+        url: 'https://pages.github.com',
+        note: 'static files, nothing running on a server',
+      },
+    ],
+  },
+];
+---
+
+<Base
+  title={`Credits — ${site.name}`}
+  description="The game, the tools and the typefaces this project is built on."
+>
+  <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
+    <h1
+      class="text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight"
+    >
+      Credits
+    </h1>
+    <p class="mt-4 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
+      This project is a renderer attached to someone else's game. The list below is
+      who did the rest.
+    </p>
+
+    <div class="mt-12 flex max-w-[62ch] flex-col gap-12">
+      {
+        groups.map((group) => (
+          <section>
+            <h2 class="font-mono text-xs tracking-wide text-ink-dim uppercase">
+              {group.title}
+            </h2>
+
+            {group.lead && (
+              <p class="mt-3 leading-relaxed text-ink-dim">{group.lead}</p>
+            )}
+
+            <ul class="mt-4">
+              {group.items.map((item) => (
+                <li class="border-t border-rule/30 py-3">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
+                  >
+                    {item.name}
+                  </a>
+                  {item.note && (
+                    <span class="text-ink-dim"> — {item.note}</span>
+                  )}
+                  {item.meta && (
+                    <span class="mt-1 block font-mono text-xs text-ink-dim">
+                      {item.meta}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+
+    <p class="mt-14 max-w-[62ch] border-t border-rule/30 pt-6 text-sm leading-relaxed text-ink-dim">
+      Font licences are kept in the site repository under
+      {' '}
+      <span class="font-mono text-xs">vendor/licenses/</span>, as the SIL Open Font
+      License requires when the files are redistributed.
+    </p>
+  </section>
+</Base>

@@ -1,0 +1,64 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { site } from '../../config';
+import { href } from '../../lib/paths';
+import { getPosts, isoDate, type Post } from '../../lib/devlog';
+
+/**
+ * Страница поста. Адрес берётся из имени файла: `render-distance.md`
+ * -> /devlog/render-distance/
+ *
+ * [...slug] со звёздочкой, а не [slug]: так адрес переживёт вложенные
+ * папки внутри content/devlog, если посты захочется разложить по годам.
+ */
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<Base
+  title={`${post.data.title} — ${site.name} devlog`}
+  description={post.data.summary}
+>
+  <article class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
+    <div class="max-w-[62ch]">
+      <time
+        datetime={isoDate(post.data.date)}
+        class="font-mono text-xs text-ink-dim"
+      >
+        {isoDate(post.data.date)}
+      </time>
+
+      <h1
+        class="mt-2 text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold leading-tight tracking-tight text-balance"
+      >
+        {post.data.title}
+      </h1>
+
+      <div class="prose mt-8">
+        <Content />
+      </div>
+
+      <p class="mt-14 border-t border-rule/30 pt-6">
+        <a
+          href={href('/devlog')}
+          class="font-mono text-sm text-ink-dim transition-colors hover:text-ink"
+        >
+          ← devlog
+        </a>
+      </p>
+    </div>
+  </article>
+</Base>

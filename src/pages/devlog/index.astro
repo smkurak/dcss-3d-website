@@ -1,31 +1,75 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { site } from '../../config';
+import { href, asset } from '../../lib/paths';
+import { getPosts, isoDate } from '../../lib/devlog';
 
-/**
- * Заглушка. Настоящий devlog — следующий шаг: посты в markdown через
- * content collections, страницы /devlog/[slug]. Пока страница существует
- * только чтобы ссылка с лендинга никуда не проваливалась.
- */
+const posts = await getPosts();
 ---
 
-<Base title={`Devlog — ${site.name}`} description="Development notes for the DCSS 3D client.">
-  <section class="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
-    <h1 class="text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight">
+<Base
+  title={`Devlog — ${site.name}`}
+  description="Development notes on building a 3D client for Dungeon Crawl Stone Soup."
+>
+  <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
+    <h1
+      class="text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight"
+    >
       Devlog
     </h1>
     <p class="mt-4 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
-      Nothing published yet. Until there is, the commit history is the honest
-      version of events.
+      Notes on what got built and what broke. No schedule.
     </p>
-    <p class="mt-6">
+
+    {
+      posts.length === 0 ? (
+        <p class="mt-10 font-mono text-sm text-ink-dim">
+          nothing published yet — the commit history is the honest version of events
+        </p>
+      ) : (
+        <ul class="mt-12 max-w-[62ch]">
+          {posts.map((post) => (
+            <li class="border-t border-rule/30 py-6 first:border-t-0 first:pt-0">
+              <article>
+                {/* Дата машинная, поэтому моноширинная. <time> — чтобы её
+                    понимали не только глазами. */}
+                <time
+                  datetime={isoDate(post.data.date)}
+                  class="font-mono text-xs text-ink-dim"
+                >
+                  {isoDate(post.data.date)}
+                </time>
+
+                <h2 class="mt-2 text-lg font-semibold tracking-tight sm:text-xl">
+                  <a
+                    href={href(`/devlog/${post.id}`)}
+                    class="text-ink transition-colors hover:text-name"
+                  >
+                    {post.data.title}
+                  </a>
+                </h2>
+
+                <p class="mt-2 leading-relaxed text-ink-dim">{post.data.summary}</p>
+
+                {import.meta.env.DEV && post.data.draft && (
+                  <p class="mt-2 font-mono text-xs text-warning">
+                    draft — не попадёт в сборку
+                  </p>
+                )}
+              </article>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <p class="mt-12">
       <a
-        href={site.github}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={asset('rss.xml')}
         class="font-mono text-sm text-ink-dim underline decoration-rule underline-offset-4 transition-colors hover:text-ink"
-        >{site.repo}</a
       >
+        rss.xml
+      </a>
     </p>
   </section>
 </Base>
