@@ -283,9 +283,13 @@ jobs:
 
 ## Что дальше
 
+Разбор состояния сайта и очередь правок — в [`docs/site-plan.md`](docs/site-plan.md).
+Здесь остаётся только то, что касается выкладки.
+
 - [x] Адрес репозитория в `src/config.ts`, `site` и `base` в `astro.config.mjs`
-- [ ] `git init`, первый коммит, `git remote add origin git@github.com:smkurak/dcss-3d-website.git`
-- [ ] Положить `.github/workflows/deploy.yml` (готовый — в разделе выше)
+- [x] `git init`, первый коммит
+- [x] `.github/workflows/deploy.yml`
+- [ ] `git remote add origin git@github.com:smkurak/dcss-3d-website.git`, `git push -u origin main`
 - [ ] Settings → Pages → Source: GitHub Actions
 - [ ] Devlog: content collection, посты в markdown, `/devlog/[slug]`
 - [ ] Страница загрузок с релизами

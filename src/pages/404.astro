@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../config';
+import { href } from '../lib/paths';
+
+/**
+ * Страница «не найдено». GitHub Pages сам отдаёт 404.html из корня
+ * опубликованного сайта, поэтому файл обязан лежать в pages/ — иначе
+ * на любой опечатке в адресе покажется чужая страница GitHub.
+ *
+ * Текст — тем же голосом, каким говорит игра: строка лога и адрес.
+ */
+---
+
+<Base
+  title={`Not found — ${site.name}`}
+  description="This page does not exist."
+>
+  <section class="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
+    <p class="font-mono text-xs text-warning">404</p>
+
+    <h1
+      class="mt-2 text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight"
+    >
+      There is nothing here
+    </h1>
+
+    <p class="mt-4 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
+      The address does not lead anywhere on this site.
+    </p>
+
+    <p class="mt-6">
+      <a
+        href={href('/')}
+        class="inline-flex min-h-11 items-center rounded border border-rule bg-panel px-4 text-sm text-ink transition-colors hover:border-ink-dim"
+      >
+        Back to the start
+      </a>
+    </p>
+  </section>
+</Base>

@@ -10,6 +10,12 @@ export const site = {
     'All game logic stays upstream; only rendering and UI are built here. ' +
     'Hobby project, open source.',
 
+  // Картинка для соцсетей — сейчас постер первого кадра. Alt читают
+  // скринридеры в лентах, где картинка есть, а страницы ещё нет.
+  ogImageAlt:
+    'The DCSS 3D client: a stone dungeon rendered in 3D, with the character ' +
+    'panel, minimap and message log along the edges.',
+
   github: 'https://github.com/smkurak/dcss-3d-website',
   repo: 'github.com/smkurak/dcss-3d-website',
 

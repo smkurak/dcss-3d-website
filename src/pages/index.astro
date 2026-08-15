@@ -87,7 +87,9 @@ const sections = [
       {
         sections.map((s) => (
           <div>
-            <p class="font-mono text-xs text-rule">{s.n}</p>
+            {/* Раньше стояло text-rule — цвет рамки на фоне окна даёт 2.3:1
+                при норме 4.5:1, номера читались как грязь на экране. */}
+            <p class="font-mono text-xs text-ink-dim">{s.n}</p>
             <h2 class="mt-2 text-lg font-semibold tracking-tight text-ink sm:text-xl">
               {s.title}
             </h2>
@@ -97,12 +99,27 @@ const sections = [
       }
     </div>
 
-    {/* Технические факты — моноширинным, по правилу из style-guide.md. */}
-    <dl class="mt-14 grid max-w-[62ch] grid-cols-1 font-mono text-sm sm:mt-16 sm:grid-cols-2 sm:gap-x-10">
+    {/*
+      Технические факты — моноширинным, по правилу из style-guide.md.
+
+      Свёрстано панелью в обводке: ровно так в клиенте выглядит блок
+      характеристик — фон панели, рамка в 1px, две колонки «ключ: значение».
+      Сайт и клиент должны выглядеть одной вещью, а не двумя.
+
+      Ширина в rem, а не 62ch как у текста рядом. `ch` считается по шрифту
+      САМОГО элемента, а здесь он моноширинный и узкий: те же 62ch дают
+      ~434px вместо ~600px у Manrope. Из-за этого «upstream, unmodified»
+      и переносилось посреди строки. 38rem — ширина колонки текста слева.
+
+      Две колонки включаются с md, а не с sm: на 640px их ширины не хватает.
+    */}
+    <dl
+      class="mt-14 grid max-w-[38rem] grid-cols-1 gap-x-10 rounded border border-rule/60 bg-panel px-5 py-3 font-mono text-sm sm:mt-16 md:grid-cols-2"
+    >
       {
         specs.map((spec) => (
-          <div class="flex gap-4 border-t border-rule/30 py-3">
-            <dt class="w-28 shrink-0 text-ink-dim">{spec.key}</dt>
+          <div class="flex gap-4 py-2">
+            <dt class="w-24 shrink-0 text-ink-dim">{spec.key}</dt>
             <dd class="text-ink">{spec.value}</dd>
           </div>
         ))
