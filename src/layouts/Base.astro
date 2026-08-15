@@ -17,9 +17,11 @@ const { title = site.title, description = site.description } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(asset('media/hero-poster.webp'), Astro.site);
 
-const nav = [
+// Тип задан явно: пункт GitHub убран (см. комментарий в index.astro), но
+// обработка внешних ссылок оставлена — вернётся с репозиторием клиента,
+// а до того здесь появится Downloads.
+const nav: Array<{ label: string; url: string; external?: boolean }> = [
   { label: 'Devlog', url: href('/devlog') },
-  { label: 'GitHub', url: site.github, external: true },
 ];
 
 // Текущая страница в меню. Сравниваем без хвостового слеша: trailingSlash
@@ -132,7 +134,10 @@ const here = strip(Astro.url.pathname);
           >, by its own team. This project only renders it.
         </p>
 
+        {/* Подписано явно: это исходники сайта, а не клиента. Без подписи
+            голая ссылка на репозиторий читается как «код проекта». */}
         <p class="font-mono text-xs leading-relaxed">
+          site source —
           <a
             href={site.github}
             target="_blank"

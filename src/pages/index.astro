@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import HeroVideo from '../components/HeroVideo.astro';
 import Screenshots from '../components/Screenshots.astro';
-import { site, specs } from '../config';
+import { specs } from '../config';
 import { href } from '../lib/paths';
 
 /**
@@ -54,18 +54,20 @@ const sections = [
       exactly where they are.
     </p>
 
+    {/*
+      Кнопки GitHub здесь нет намеренно. На лендинге про 3D-клиент «GitHub»
+      читается как «исходники клиента», а вёл бы в репозиторий этого сайта —
+      человек жмёт первой ссылкой и попадает не туда. Исходники клиента пока
+      закрыты; факт об этом стоит в блоке характеристик ниже, моноширинным,
+      вместе с остальной техникой. Появится репозиторий клиента — кнопка
+      вернётся сюда и будет вести куда обещает.
+
+      Ссылка на исходники самого сайта осталась в подвале и там подписана.
+    */}
     <div class="mt-7 flex flex-wrap items-center gap-3">
       <a
-        href={site.github}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline-flex min-h-11 items-center rounded border border-rule bg-panel px-4 text-sm text-ink transition-colors hover:border-ink-dim"
-      >
-        GitHub
-      </a>
-      <a
         href={href('/devlog')}
-        class="inline-flex min-h-11 items-center rounded border border-transparent px-4 text-sm text-ink-dim transition-colors hover:text-ink"
+        class="inline-flex min-h-11 items-center rounded border border-rule bg-panel px-4 text-sm text-ink transition-colors hover:border-ink-dim"
       >
         Devlog
       </a>

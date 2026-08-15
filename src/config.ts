@@ -33,4 +33,9 @@ export const specs: ReadonlyArray<{ key: string; value: string }> = [
   { key: 'game logic', value: 'upstream, unmodified' },
   { key: 'built here', value: 'renderer + UI' },
   { key: 'status', value: 'in development' },
+  // Эти две строки отвечают на вопросы, которые иначе задаст каждый пришедший:
+  // «где код» и «как попробовать». Ответ «пока никак» честнее молчания и
+  // честнее кнопки, которая никуда не ведёт. Менять по мере готовности.
+  { key: 'client source', value: 'not public yet' },
+  { key: 'builds', value: 'none yet' },
 ];
