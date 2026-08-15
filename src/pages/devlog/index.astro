@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+import { site } from '../../config';
+
+/**
+ * Заглушка. Настоящий devlog — следующий шаг: посты в markdown через
+ * content collections, страницы /devlog/[slug]. Пока страница существует
+ * только чтобы ссылка с лендинга никуда не проваливалась.
+ */
+---
+
+<Base title={`Devlog — ${site.name}`} description="Development notes for the DCSS 3D client.">
+  <section class="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
+    <h1 class="text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight">
+      Devlog
+    </h1>
+    <p class="mt-4 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
+      Nothing published yet. Until there is, the commit history is the honest
+      version of events.
+    </p>
+    <p class="mt-6">
+      <a
+        href={site.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="font-mono text-sm text-ink-dim underline decoration-rule underline-offset-4 transition-colors hover:text-ink"
+        >{site.repo}</a
+      >
+    </p>
+  </section>
+</Base>

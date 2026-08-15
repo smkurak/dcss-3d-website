@@ -1,0 +1,47 @@
+[
+  {
+    "id": "screen__01",
+    "width": 1600,
+    "height": 898,
+    "widths": [
+      1600,
+      800
+    ]
+  },
+  {
+    "id": "screen__02",
+    "width": 1600,
+    "height": 902,
+    "widths": [
+      1600,
+      800
+    ]
+  },
+  {
+    "id": "screen__03",
+    "width": 1600,
+    "height": 892,
+    "widths": [
+      1600,
+      800
+    ]
+  },
+  {
+    "id": "screen__04",
+    "width": 1600,
+    "height": 894,
+    "widths": [
+      1600,
+      800
+    ]
+  },
+  {
+    "id": "screen__05",
+    "width": 1600,
+    "height": 898,
+    "widths": [
+      1600,
+      800
+    ]
+  }
+]

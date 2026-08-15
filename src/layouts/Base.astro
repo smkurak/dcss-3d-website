@@ -1,0 +1,121 @@
+---
+import '../styles/global.css';
+import { site } from '../config';
+import { asset, href } from '../lib/paths';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = site.title, description = site.description } = Astro.props;
+
+// Astro.site берётся из astro.config.mjs. Пока там example.github.io,
+// canonical и og:image будут указывать туда же — поправится вместе с деплоем.
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(asset('media/hero-poster.webp'), Astro.site);
+
+const nav = [
+  { label: 'Devlog', url: href('/devlog') },
+  { label: 'GitHub', url: site.github, external: true },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
+    <meta name="theme-color" content="#252526" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Ни аналитики, ни внешних шрифтов, ни CDN: сайт не делает
+         ни одного запроса за пределы своего домена. -->
+  </head>
+
+  <body class="flex min-h-dvh flex-col">
+    <a
+      href="#content"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:border focus:border-rule focus:bg-panel focus:px-4 focus:py-2 focus:text-sm"
+    >
+      Skip to content
+    </a>
+
+    <header class="border-b border-rule/40">
+      <div
+        class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4 sm:px-8"
+      >
+        <a
+          href={href('/')}
+          class="text-[0.95rem] font-semibold tracking-tight text-ink transition-colors hover:text-name"
+        >
+          {site.name}
+        </a>
+
+        <nav aria-label="Main">
+          <ul class="flex items-center gap-5 text-sm sm:gap-7">
+            {
+              nav.map((item) => (
+                <li>
+                  <a
+                    href={item.url}
+                    class="inline-flex min-h-11 items-center text-ink-dim transition-colors hover:text-ink"
+                    {...(item.external
+                      ? { target: '_blank', rel: 'noopener noreferrer' }
+                      : {})}
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content" class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="mt-24 border-t border-rule/40">
+      <div
+        class="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-10 text-sm text-ink-dim sm:flex-row sm:items-start sm:justify-between sm:px-8"
+      >
+        <p class="max-w-md leading-relaxed">
+          The game itself — rules, content and two decades of work — is
+          {' '}
+          <a
+            href={site.upstream}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
+            >{site.upstreamName}</a
+          >, by its own team. This project only renders it.
+        </p>
+
+        <p class="font-mono text-xs leading-relaxed">
+          <a
+            href={site.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-colors hover:text-ink">{site.repo}</a
+          >
+          <br />
+          <span class="text-ink-dim/70">no trackers, no third-party requests</span>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

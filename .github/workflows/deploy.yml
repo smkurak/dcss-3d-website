@@ -1,0 +1,78 @@
+# Сборка и публикация сайта на GitHub Pages.
+#
+# Собирает всё сам GitHub на чистой виртуалке: с вашей машины уезжают только
+# исходники. dist/ в репозитории нет и быть не должно — он в .gitignore.
+#
+# Опубликованный адрес: https://smkurak.github.io/dcss-3d-website/
+# Он же прописан в astro.config.mjs как site + base. Если менять там — менять
+# и там, иначе ссылки и метатеги разъедутся с реальным адресом.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # кнопка «запустить руками» во вкладке Actions
+
+# По умолчанию у workflow нет права публиковать Pages.
+# Без этих трёх строк деплой падает на правах — ошибка первого запуска №1.
+permissions:
+  contents: read
+  pages: write # право публиковать
+  id-token: write # deploy-pages подтверждает происхождение артефакта
+
+# Два пуша подряд не подерутся за публикацию: начатый прогон отменяется.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # ВАЖНО, до первого запуска: Pages должен быть включён руками —
+      # Settings -> Pages -> Source: GitHub Actions.
+      #
+      # Автоматически это не делается. У GITHUB_TOKEN право pages: write
+      # разрешает ПУБЛИКОВАТЬ на уже существующий Pages-сайт, но не СОЗДАВАТЬ
+      # его: создание требует админских прав на репозиторий, которых у токена
+      # нет. Шаг actions/configure-pages с enablement: true падает здесь на
+      # «Create Pages site failed: Resource not accessible by integration».
+      # Поэтому шага тут нет — его выходные данные не нужны, base задан
+      # явно в astro.config.mjs.
+
+      - uses: actions/setup-node@v7
+        with:
+          # Берётся из .node-version — того же файла, что использует fnm локально.
+          # Одна строка вместо расхождения «у меня-то собиралось».
+          node-version-file: .node-version
+          cache: npm
+
+      # ci, а не install: ставит строго по package-lock.json и падает при
+      # расхождении с package.json. Поэтому package-lock.json обязан быть
+      # в репозитории. Внутренний реестр из ~/.npmrc здесь не участвует —
+      # на раннере чистая машина с публичным npm.
+      - run: npm ci
+
+      # Только сборка сайта. Пережатие медиа (npm run media) и шрифтов
+      # (build-fonts.py) сюда намеренно не входит: результат закоммичен,
+      # а ffmpeg и Python на раннере были бы лишними зависимостями.
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  # Публикация отделена от сборки: артефакт собирается без доступа
+  # к среде github-pages, раскатывает его отдельный джоб.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

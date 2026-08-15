@@ -1,0 +1,297 @@
+# Сайт DCSS 3D Client
+
+Статический сайт-визитка. Astro + Tailwind, без бэкенда, без базы, без аналитики
+и без единого запроса на сторонние домены.
+
+Сейчас готов лендинг. Devlog и страница загрузок — следующие шаги.
+
+---
+
+## Что нужно поставить
+
+| инструмент | зачем | проверка |
+|---|---|---|
+| Node **≥ 22.12** | Astro 7 ниже не запускается | `node --version` |
+| ffmpeg | пережимает гифку и скриншоты | `ffmpeg -version` |
+| Python + `fonttools`, `brotli` | сабсеттинг шрифтов в woff2 | `pip install fonttools brotli` |
+
+Версия ноды закреплена в `.node-version`. У fnm/nvm она подхватывается сама;
+на этой машине нужная версия уже стоит:
+
+```
+fnm use 22.23.2
+```
+
+> **Если `npm install` падает с `ENOTFOUND`.** Проверьте `npm config get registry`:
+> если там корпоративное зеркало из `~/.npmrc`, снаружи рабочей сети оно не
+> резолвится. Обход без правки глобального конфига:
+> ```
+> npm install --registry=https://registry.npmjs.org/
+> ```
+> То же самое у fnm — свой зеркальный хост, отсюда флаг
+> `--node-dist-mirror=https://nodejs.org/dist` при установке ноды.
+
+## Команды
+
+```
+npm install     # с флагом --registry, см. выше
+npm run dev     # localhost:4321
+npm run build   # -> dist/
+npm run preview # посмотреть собранное так, как его отдаст хостинг
+npm run media   # пережать media-src/ -> public/media/   (нужен ffmpeg)
+python scripts/build-fonts.py   # ttf -> woff2 в src/assets/fonts/
+```
+
+`media` и `build-fonts` запускаются вручную и редко: результат закоммичен.
+В сборку сайта они не входят, чтобы `npm run build` не требовал ни ffmpeg,
+ни Python — на CI это лишние зависимости.
+
+> На самом сайте нет ни аналитики, ни счётчиков. Но при первой сборке
+> Astro CLI пишет, что шлёт анонимную статистику **о себе** — это сборочный
+> инструмент, не сайт. Если не нравится и это:
+> ```
+> npx astro telemetry disable
+> ```
+> Настройка глобальная, на все проекты Astro; поэтому оставлено на ваше
+> усмотрение, а не выключено за вас.
+
+---
+
+## Структура
+
+```
+astro.config.mjs        site и base — единственное, что правится под хостинг
+src/
+  config.ts             адрес репозитория, тексты фактов — всё правится здесь
+  lib/paths.ts          asset() и href() — склейка путей с учётом base
+  styles/global.css     палитра из style-guide + @font-face
+  assets/fonts/         woff2 (их обрабатывает Vite: хеш + base)
+  layouts/Base.astro    шапка, подвал, метатеги
+  components/           HeroVideo, Screenshots
+  data/shots.json       размеры скриншотов, генерится build-media.mjs
+  pages/index.astro     лендинг
+  pages/devlog/         пока заглушка
+public/                 отдаётся как есть: media/, favicon.svg, .nojekyll
+media-src/              исходники (в .gitignore, см. ниже)
+vendor/                 вариативная Manrope + лицензии OFL
+scripts/                build-media.mjs, build-fonts.py
+docs/                   библия и style-guide
+```
+
+### Почему `media-src/` в `.gitignore`
+
+Исходная гифка — 74 МБ, пять PNG — по 4–5 МБ. В git такое класть нельзя:
+объект остаётся в истории навсегда, `git clone` начинает тянуть сотню мегабайт,
+а GitHub ругается на размер репозитория. Вычистить потом можно только
+переписыванием истории.
+
+В репозиторий едет только пережатое из `public/media/` (~1.5 МБ на всё).
+Оригиналы держите вне репозитория — на диске, в облаке или в git-lfs.
+
+### Медиа: почему видео, а не гифка
+
+```
+screen_gameplay_01.gif   73.9 МБ
+  -> hero.webm            522 КБ    VP9   — основной вариант
+  -> hero.mp4             870 КБ    H.264 — Safari и старые устройства
+  -> hero-poster.webp      36 КБ    первый кадр, виден до старта видео
+```
+
+В ~140 раз меньше. Гифка хранит каждый кадр целиком, межкадрового сжатия у неё
+нет; видеокодек кодирует только изменения. Два формата — потому что webm не
+понимает старый Safari; браузер берёт первый `<source>`, который умеет.
+
+Видео отдаётся как `<video autoplay muted loop playsinline>`. `muted` здесь
+обязателен: без него браузеры запрещают автозапуск. `playsinline` не даёт iOS
+открыть видео на весь экран. При `prefers-reduced-motion: reduce` автозапуск
+отключается скриптом, остаётся постер; кнопка play/pause есть всегда.
+
+### Шрифты
+
+Оба лежат локально, ни одного обращения к CDN.
+
+- **Iosevka Charon Mono** — ровно тот `.ttf`, что в Unity-проекте (`fonts/`).
+- **Manrope** — вариативная версия 4.504 с осью `wght` 200–800. Та же версия,
+  что статический Regular в клиенте, но одним файлом даёт и текстовое
+  начертание, и полужирное для заголовков.
+
+После сабсеттинга до латиницы: 1.4 МБ + 162 КБ → **20.5 КБ + 22.1 КБ**.
+Лицензии OFL — в `vendor/licenses/`, их обязательно оставить при
+распространении шрифтов.
+
+Раскладка по гарнитурам следует правилу из `docs/style-guide.md`: моноширинный
+несёт техническое (факты о сборке, подписи к скриншотам, имя репозитория),
+гротеск — наш текст.
+
+---
+
+## Деплой
+
+Ниже — то, что обычно и ломается. Файл workflow **намеренно не создан**:
+разберитесь, что он делает, и добавьте осознанно.
+
+### Две настройки, от которых всё зависит
+
+В `astro.config.mjs` — уже проставлено под этот репозиторий:
+
+```js
+site: 'https://smkurak.github.io',   // полный адрес — для canonical и og:url
+base: '/dcss-3d-website',            // подпуть, на котором живёт сайт
+```
+
+Опубликованный адрес будет **https://smkurak.github.io/dcss-3d-website/**
+
+`site` влияет только на абсолютные адреса в метатегах. `base` влияет на **все**
+пути к файлам, и именно он ломает деплой.
+
+### Откуда берётся `base`
+
+GitHub Pages отдаёт репозиторий `USER/REPO` по адресу `USER.github.io/REPO/` —
+то есть **не в корне домена**. Значит `base: '/REPO'`.
+
+| куда деплоим | `site` | `base` |
+|---|---|---|
+| **`smkurak/dcss-3d-website` → `smkurak.github.io/dcss-3d-website/`** | `https://smkurak.github.io` | `/dcss-3d-website` |
+| репозиторий `smkurak.github.io` (user page) | `https://smkurak.github.io` | `/` |
+| свой домен через CNAME | `https://ваш-домен` | `/` |
+| Netlify | `https://имя.netlify.app` | `/` |
+
+Из-за `base` **локальный адрес тоже с подпутём**:
+`http://127.0.0.1:4321/dcss-3d-website/`. Так и задумано — dev-сервер честно
+воспроизводит боевой адрес, и поломка путей видна до пуша, а не после.
+
+### Классическая поломка: «локально работало, на Pages белый экран»
+
+Astro знает про `base`, но **не переписывает пути, написанные руками**.
+Ссылка `src="/media/hero.webm"` на `USER.github.io/REPO/` уйдёт в
+`USER.github.io/media/hero.webm` — мимо, 404.
+
+Поэтому в проекте:
+
+- любой путь к файлу из `public/` идёт через `asset()` из `src/lib/paths.ts`;
+- любая внутренняя ссылка — через `href()`;
+- шрифты лежат в `src/assets/`, а не в `public/`, потому что `url()` внутри CSS
+  обрабатывает Vite: он сам подставит `base` и добавит хеш к имени файла.
+
+Проверить до пуша: поставить `base: '/REPO'`, собрать и открыть
+`npm run preview` — dev-сервер и preview честно поднимают сайт на подпути.
+Если картинки и шрифты на месте — на Pages тоже будут.
+
+### Второй классический сюрприз: Jekyll
+
+Если деплоить **пушем в ветку** (Settings → Pages → Deploy from a branch),
+GitHub прогоняет содержимое через Jekyll, а тот игнорирует папки, начинающиеся
+с подчёркивания. Astro складывает всю статику в `_astro/` — сайт открывается
+без стилей и скриптов.
+
+Лечится пустым файлом `.nojekyll` в корне выдачи. Он уже лежит в `public/`,
+то есть попадает в `dist/` при каждой сборке.
+
+При деплое **через Actions** (`actions/deploy-pages`) Jekyll не запускается
+вообще, и файл просто не мешает.
+
+### Как включить деплой через Actions
+
+1. Settings → Pages → Source: **GitHub Actions**.
+2. Прописать `site` и `base` в `astro.config.mjs` по таблице выше.
+3. Положить в `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # кнопка «запустить руками» во вкладке Actions
+
+permissions:
+  contents: read
+  pages: write              # без этого deploy-pages не имеет права публиковать
+  id-token: write           # deploy-pages подтверждает происхождение артефакта
+
+concurrency:                # два пуша подряд не подерутся за публикацию
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version   # держит CI и локальную версию вместе
+          cache: npm
+
+      - run: npm ci                          # ci, а не install: строго по package-lock
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist                         # то, что собрал Astro
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+```
+
+Что здесь важно понимать:
+
+- **`permissions`** — по умолчанию у workflow нет права публиковать Pages.
+  Без `pages: write` и `id-token: write` шаг деплоя падает на правах, и это
+  самая частая ошибка первого запуска.
+- **Pages включается руками, и только до первого запуска.** Вторая по частоте
+  ошибка: workflow стартует раньше, чем Pages включён, и падает на
+  `Get Pages site failed: Not Found`. Автоматизировать это не выходит:
+  у `GITHUB_TOKEN` право `pages: write` разрешает публиковать на существующий
+  Pages-сайт, но не создавать его — создание требует админских прав на
+  репозиторий. Шаг `actions/configure-pages` с `enablement: true` на этом
+  и падает: `Create Pages site failed: Resource not accessible by integration`.
+  Поэтому порядок жёсткий: сначала Settings → Pages → Source: GitHub Actions,
+  потом прогон.
+- **`npm ci`, а не `npm install`** — ставит ровно то, что в `package-lock.json`,
+  и падает при расхождении. Значит `package-lock.json` обязан быть в репозитории.
+- **Два джоба, а не один** — сборка отделена от публикации: артефакт собирается
+  без доступа к среде `github-pages`, публикует его отдельный джоб.
+- **`node-version-file`** — CI берёт версию из того же `.node-version`, что и вы
+  локально. Одна строка вместо «у меня собиралось».
+- **Внутренний реестр из `~/.npmrc` на CI не участвует** — там чистая машина
+  с публичным npm, флаг `--registry` не нужен.
+- Версии экшенов проверены 2026-08-15. Обновлять их полезно, но major-версия
+  меняет поведение — читайте changelog, а не поднимайте вслепую.
+
+Первый прогон: вкладка Actions → workflow → зелёный `deploy` → в его выводе
+ссылка на опубликованный сайт.
+
+> Есть готовый `withastro/action`, который делает install и build одним шагом.
+> Здесь он намеренно не используется: пять явных шагов видно насквозь, и когда
+> что-то падает, понятно, что именно.
+
+### Netlify, если проще
+
+`base: '/'`, build command `npm run build`, publish directory `dist`.
+Больше ничего. Версию ноды Netlify берёт из `.node-version`.
+
+---
+
+## Что дальше
+
+- [x] Адрес репозитория в `src/config.ts`, `site` и `base` в `astro.config.mjs`
+- [ ] `git init`, первый коммит, `git remote add origin git@github.com:smkurak/dcss-3d-website.git`
+- [ ] Положить `.github/workflows/deploy.yml` (готовый — в разделе выше)
+- [ ] Settings → Pages → Source: GitHub Actions
+- [ ] Devlog: content collection, посты в markdown, `/devlog/[slug]`
+- [ ] Страница загрузок с релизами
+- [ ] Решить, что с языком интерфейса на скриншотах (см. ниже)
+
+> На `screen__01` и `screen__05` в правой панели видно «Инвентарь (F2)»
+> по-русски, хотя `style-guide.md` говорит, что весь текст для игрока —
+> английский (переход 2026-08-07). Скриншоты сняты на сборке, где перевод
+> дошёл не везде. Стоит переснять перед тем, как показывать сайт.

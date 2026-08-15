@@ -1,0 +1,99 @@
+---
+import shots from '../data/shots.json';
+import { asset } from '../lib/paths';
+
+/**
+ * Скриншоты. Размеры берутся из src/data/shots.json — его пишет
+ * scripts/build-media.mjs, поэтому width/height всегда настоящие
+ * и картинки не дёргают вёрстку при загрузке.
+ *
+ * Подписи и alt — руками: только то, что на снимке действительно есть.
+ */
+
+const captions: Record<string, { alt: string; caption: string }> = {
+  screen__01: {
+    alt:
+      'Third-person view of a stone dungeon corridor on Dungeon:1. The character panel, ' +
+      'minimap and inventory run down the right edge; the message log sits along the bottom.',
+    caption: 'third-person camera',
+  },
+  screen__02: {
+    alt:
+      'The character standing in shallow water beside a staircase, with the message log ' +
+      'reporting the terrain underfoot.',
+    caption: 'shallow water, staircase',
+  },
+  screen__03: {
+    alt:
+      'Top-down view of a dungeon level with monsters and items marked on the floor, and ' +
+      'an encounter warning highlighted in the message log.',
+    caption: 'top-down camera',
+  },
+  screen__04: {
+    alt:
+      'A monster description panel for a bat opened over the 3D view, set in the same ' +
+      'monospace the game itself uses.',
+    caption: 'monster description — game text, monospace',
+  },
+  screen__05: {
+    alt:
+      'A Djinni magician casting Foxfire, two glowing orbs lighting the surrounding stone.',
+    caption: 'foxfire',
+  },
+};
+
+const srcset = (id: string, widths: number[]) =>
+  widths
+    .slice()
+    .sort((a, b) => a - b)
+    .map((w) => `${asset(`media/${id}-${w}.webp`)} ${w}w`)
+    .join(', ');
+
+const [lead, ...rest] = shots;
+---
+
+<section aria-labelledby="shots-heading" class="mx-auto max-w-5xl px-5 sm:px-8">
+  <h2 id="shots-heading" class="sr-only">Screenshots</h2>
+
+  <div class="flex flex-col gap-4">
+    <figure>
+      <img
+        src={asset(`media/${lead.id}-1600.webp`)}
+        srcset={srcset(lead.id, lead.widths)}
+        sizes="(min-width: 1024px) 960px, 100vw"
+        width={lead.width}
+        height={lead.height}
+        alt={captions[lead.id]?.alt ?? ''}
+        loading="lazy"
+        decoding="async"
+        class="block w-full rounded border border-rule/60 bg-panel"
+      />
+      <figcaption class="mt-2 font-mono text-xs text-ink-dim">
+        {captions[lead.id]?.caption}
+      </figcaption>
+    </figure>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {
+        rest.map((shot) => (
+          <figure>
+            <img
+              src={asset(`media/${shot.id}-800.webp`)}
+              srcset={srcset(shot.id, shot.widths)}
+              sizes="(min-width: 1024px) 472px, (min-width: 640px) 50vw, 100vw"
+              width={shot.width}
+              height={shot.height}
+              alt={captions[shot.id]?.alt ?? ''}
+              loading="lazy"
+              decoding="async"
+              class="block w-full rounded border border-rule/60 bg-panel"
+            />
+            <figcaption class="mt-2 font-mono text-xs text-ink-dim">
+              {captions[shot.id]?.caption}
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+</section>
