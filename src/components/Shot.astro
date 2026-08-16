@@ -18,13 +18,15 @@ interface Props {
   shot: { id: string; width: number; height: number; widths: number[] };
   alt: string;
   caption: string;
+  /** Подпись к ссылке «открыть в полном размере», переведённая. */
+  openLabel: string;
   /** Ширина варианта для атрибута src (фолбэк, если srcset не поддержан). */
   fallbackWidth: number;
   /** Значение sizes — считается от реальной ширины контейнера. */
   sizes: string;
 }
 
-const { shot, alt, caption, fallbackWidth, sizes } = Astro.props;
+const { shot, alt, caption, openLabel, fallbackWidth, sizes } = Astro.props;
 
 const srcset = shot.widths
   .slice()
@@ -49,7 +51,7 @@ const full = asset(`media/${shot.id}-${Math.max(...shot.widths)}.webp`);
     {caption}
   </figcaption>
 
-  <a href={full} target="_blank" rel="noopener noreferrer" title="Open full size" class="block">
+  <a href={full} target="_blank" rel="noopener noreferrer" title={openLabel} class="block">
     <img
       src={asset(`media/${shot.id}-${fallbackWidth}.webp`)}
       srcset={srcset}

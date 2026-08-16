@@ -2,16 +2,38 @@
 import '../styles/global.css';
 // ?url — отдаёт готовый путь к файлу после обработки Vite (с base и хешем),
 // ровно тот же, что подставится в url() внутри @font-face. Нужен для preload.
-import manropeUrl from '../assets/fonts/manrope-var.woff2?url';
+import manropeLatin from '../assets/fonts/manrope-var-latin.woff2?url';
+import manropeCyrillic from '../assets/fonts/manrope-var-cyrillic.woff2?url';
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import { site } from '../config';
-import { asset, href } from '../lib/paths';
+import { alternateLinks, languages, localePath, t, type Lang } from '../i18n';
+import { asset } from '../lib/paths';
 
 interface Props {
+  /** Язык страницы. Приходит из getStaticPaths, а не угадывается по адресу. */
+  lang: Lang;
+  /**
+   * Логический путь без префикса языка и base: '/', '/credits', '/devlog'.
+   * По нему строятся hreflang и цели переключателя языка.
+   */
+  path: string;
+  /**
+   * Есть ли у страницы переводы. False для записей devlog и 404: они
+   * существуют только по-английски, и объявлять несуществующие hreflang
+   * нельзя — поисковик пойдёт по ним и получит 404. Переключатель при этом
+   * остаётся и ведёт на `path` (для записи это список devlog), чтобы читатель
+   * не оказался в языковом тупике.
+   */
+  hasTranslations?: boolean;
   title?: string;
   description?: string;
 }
 
-const { title = site.title, description = site.description } = Astro.props;
+const { lang, path, hasTranslations = true, title, description } = Astro.props;
+const s = t(lang);
+
+const pageTitle = title ?? s.meta.title;
+const pageDescription = description ?? s.meta.description;
 
 // Astro.site и base берутся из astro.config.mjs — там же и меняются.
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -20,11 +42,27 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 // Собирается в scripts/build-media.mjs.
 const ogImage = new URL(asset('media/og-card.jpg'), Astro.site);
 
-// Тип задан явно: пункт GitHub убран (см. комментарий в index.astro), но
-// обработка внешних ссылок оставлена — вернётся с репозиторием клиента,
+// og:locale хочет формат language_TERRITORY, а не голый код языка.
+const ogLocales: Record<Lang, string> = {
+  en: 'en_US',
+  ru: 'ru_RU',
+  de: 'de_DE',
+  es: 'es_ES',
+};
+
+// Те же четыре страницы на других языках. Без этого поисковик считает их
+// дубликатами и они конкурируют друг с другом.
+const alternates = hasTranslations ? alternateLinks(path, Astro.site) : [];
+
+// Латинское подмножество нужно любой странице: адреса, github.com и названия
+// вроде Unity набраны латиницей и в русском тексте тоже.
+const preloadFonts =
+  languages[lang].script === 'cyrillic' ? [manropeLatin, manropeCyrillic] : [manropeLatin];
+
+// Меню. Тип с `external` оставлен: пункт вернётся с репозиторием клиента,
 // а до того здесь появится Downloads.
 const nav: Array<{ label: string; url: string; external?: boolean }> = [
-  { label: 'Devlog', url: href('/devlog') },
+  { label: s.chrome.navDevlog, url: localePath(lang, '/devlog') },
 ];
 
 // Текущая страница в меню. Сравниваем без хвостового слеша: trailingSlash
@@ -34,20 +72,25 @@ const here = strip(Astro.url.pathname);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
     <link rel="canonical" href={canonical} />
+
+    {
+      alternates.map((alt) => (
+        <link rel="alternate" hreflang={alt.hreflang} href={alt.href} />
+      ))
+    }
 
     <link rel="icon" href={asset('favicon.svg')} type="image/svg+xml" />
     <meta name="theme-color" content="#252526" />
 
     <!-- Автообнаружение ленты: читалки ищут именно этот тег, а не ссылку
-         в подвале. Стоит на всех страницах, чтобы подписаться можно было
-         с любой. -->
+         в подвале. Лента одна и английская — записи devlog не переводятся. -->
     <link
       rel="alternate"
       type="application/rss+xml"
@@ -59,20 +102,28 @@ const here = strip(Astro.url.pathname);
          Без preload браузер узнаёт о нём только разобрав CSS — на лишний круг
          позже. crossorigin обязателен даже для своего домена: шрифты всегда
          запрашиваются в режиме CORS, без атрибута preload уйдёт впустую
-         и файл скачается дважды. -->
-    <link rel="preload" href={manropeUrl} as="font" type="font/woff2" crossorigin />
+         и файл скачается дважды.
+
+         Предзагружается ровно то подмножество, которым набрана страница:
+         латинское — всегда (адреса, названия и имена латиницей есть и в
+         русском тексте), кириллическое — только на кириллических языках. -->
+    {
+      preloadFonts.map((url) => (
+        <link rel="preload" href={url} as="font" type="font/woff2" crossorigin />
+      ))
+    }
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={site.name} />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:locale" content={ogLocales[lang]} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={site.ogImageAlt} />
+    <meta property="og:image:alt" content={s.meta.ogImageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- Ни аналитики, ни внешних шрифтов, ни CDN: сайт не делает
@@ -84,16 +135,18 @@ const here = strip(Astro.url.pathname);
       href="#content"
       class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:border focus:border-rule focus:bg-panel focus:px-4 focus:py-2 focus:text-sm"
     >
-      Skip to content
+      {s.chrome.skipToContent}
     </a>
 
     <header class="border-b border-rule/40">
+      {/* flex-wrap: на узком экране переключатель уезжает на вторую строку,
+          а не выдавливает название проекта. */}
       <div
-        class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4 sm:px-8"
+        class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-1 px-5 py-4 sm:px-8"
       >
         <a
-          href={href('/')}
-          class="text-[0.95rem] font-semibold tracking-tight text-ink transition-colors hover:text-name"
+          href={localePath(lang, '/')}
+          class="mr-auto text-[0.95rem] font-semibold tracking-tight text-ink transition-colors hover:text-name"
         >
           {site.name}
         </a>
@@ -125,6 +178,8 @@ const here = strip(Astro.url.pathname);
             }
           </ul>
         </nav>
+
+        <LanguageSwitcher lang={lang} path={path} />
       </div>
     </header>
 
@@ -138,21 +193,20 @@ const here = strip(Astro.url.pathname);
       >
         <div class="max-w-md">
           <p class="leading-relaxed">
-            The game itself — rules, content and two decades of work — is
-            {' '}
+            {s.chrome.footerUpstream.before}
             <a
               href={site.upstream}
               target="_blank"
               rel="noopener noreferrer"
               class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
               >{site.upstreamName}</a
-            >, by its own team. This project only renders it.
+            >{s.chrome.footerUpstream.after}
           </p>
           <p class="mt-2">
             <a
-              href={href('/credits')}
+              href={localePath(lang, '/credits')}
               class="underline decoration-rule underline-offset-4 transition-colors hover:text-ink"
-              >Credits — the game, the tools, the typefaces</a
+              >{s.chrome.footerCredits}</a
             >
           </p>
         </div>
@@ -160,7 +214,7 @@ const here = strip(Astro.url.pathname);
         {/* Подписано явно: это исходники сайта, а не клиента. Без подписи
             голая ссылка на репозиторий читается как «код проекта». */}
         <p class="font-mono text-xs leading-relaxed">
-          site source —
+          {s.chrome.footerSiteSource} —
           <a
             href={site.github}
             target="_blank"
@@ -173,7 +227,7 @@ const here = strip(Astro.url.pathname);
             class="transition-colors hover:text-ink">rss.xml</a
           >
           <br />
-          <span>no trackers, no third-party requests</span>
+          <span>{s.chrome.footerNoTrackers}</span>
         </p>
       </div>
     </footer>

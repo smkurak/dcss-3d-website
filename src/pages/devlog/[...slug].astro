@@ -2,8 +2,14 @@
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { site } from '../../config';
-import { href } from '../../lib/paths';
+import { defaultLang, localePath, t } from '../../i18n';
 import { getPosts, isoDate, type Post } from '../../lib/devlog';
+
+// Записи существуют только по-английски: переводить содержательные тексты
+// на четыре языка — отдельная работа на каждый пост и обязательство держать
+// версии в согласии. Обвязка страницы поэтому тоже английская.
+const lang = defaultLang;
+const s = t(lang);
 
 /**
  * Страница поста. Адрес берётся из имени файла: `render-distance.md`
@@ -28,7 +34,14 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 ---
 
+{/* path='/devlog', а не адрес самой записи: у записи нет переводов, и
+    переключатель языка уводит на список devlog на выбранном языке —
+    иначе читатель попадает в языковой тупик. hasTranslations=false, чтобы
+    не объявлять hreflang на адреса, которых не существует. */}
 <Base
+  lang={lang}
+  path="/devlog"
+  hasTranslations={false}
   title={`${post.data.title} — ${site.name} devlog`}
   description={post.data.summary}
 >
@@ -53,10 +66,10 @@ const { Content } = await render(post);
 
       <p class="mt-14 border-t border-rule/30 pt-6">
         <a
-          href={href('/devlog')}
+          href={localePath(lang, '/devlog')}
           class="font-mono text-sm text-ink-dim transition-colors hover:text-ink"
         >
-          ← devlog
+          ← {s.devlog.back}
         </a>
       </p>
     </div>

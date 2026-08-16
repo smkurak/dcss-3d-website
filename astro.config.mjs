@@ -26,7 +26,19 @@ export default defineConfig({
   },
   // Карта сайта собирается из готовых страниц, адреса берутся из site + base.
   // Ссылку на неё отдаёт src/pages/robots.txt.ts.
-  integrations: [sitemap()],
+  //
+  // i18n здесь — только для карты сайта: она проставит в ней hreflang, чтобы
+  // четыре языковые версии не конкурировали как дубликаты. Маршрутизация
+  // сделана вручную через [...lang], встроенный роутинг Astro не включаем —
+  // иначе два механизма делали бы одно и то же по-разному.
+  integrations: [
+    sitemap({
+      i18n: {
+        defaultLocale: 'en',
+        locales: { en: 'en', ru: 'ru', de: 'de', es: 'es' },
+      },
+    }),
+  ],
 
   server: {
     // Явный IPv4. По умолчанию Astro слушает `localhost`, а node на Windows
@@ -42,5 +54,14 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      // Vite по умолчанию вшивает ассеты меньше 4 КБ в CSS как base64.
+      // Для шрифтов это вредно: подмножества разложены по unicode-range
+      // ровно затем, чтобы браузер качал только нужные алфавиты, а вшитый
+      // в CSS файл едет ко всем и всегда (да ещё и на треть тяжелее из-за
+      // base64). Мелкие подмножества вроде cyrillic-ext под порог попадают,
+      // поэтому для woff2 инлайн выключен, для остального оставлен как был.
+      assetsInlineLimit: (filePath) => (filePath.endsWith('.woff2') ? false : undefined),
+    },
   },
 });

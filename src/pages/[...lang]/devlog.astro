@@ -1,31 +1,52 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { site } from '../../config';
-import { href, asset } from '../../lib/paths';
+import { defaultLang, langCodes, localePath, t, type Lang } from '../../i18n';
+import { asset } from '../../lib/paths';
 import { getPosts, isoDate } from '../../lib/devlog';
 
+/**
+ * Список записей devlog на четырёх языках.
+ *
+ * Переведена только обвязка — заголовок, вводка, пустое состояние. Сами
+ * записи английские, и на локализованных страницах об этом сказано прямо:
+ * читатель должен узнать это до клика, а не после.
+ */
+export function getStaticPaths() {
+  return langCodes.map((lang) => ({
+    params: { lang: lang === defaultLang ? undefined : lang },
+    props: { lang },
+  }));
+}
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
 const posts = await getPosts();
 ---
 
-<Base
-  title={`Devlog — ${site.name}`}
-  description="Development notes on building a 3D client for Dungeon Crawl Stone Soup."
->
+<Base lang={lang} path="/devlog" title={`${s.devlog.title} — DCSS 3D`} description={s.devlog.description}>
   <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
     <h1
       class="text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight"
     >
-      Devlog
+      {s.devlog.title}
     </h1>
     <p class="mt-4 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
-      Notes on what got built and what broke. No schedule.
+      {s.devlog.lead}
     </p>
 
     {
+      lang !== defaultLang && (
+        <p class="mt-3 font-mono text-xs text-ink-dim">{s.devlog.englishOnly}</p>
+      )
+    }
+
+    {
       posts.length === 0 ? (
-        <p class="mt-10 font-mono text-sm text-ink-dim">
-          nothing published yet — the commit history is the honest version of events
-        </p>
+        <p class="mt-10 font-mono text-sm text-ink-dim">{s.devlog.empty}</p>
       ) : (
         <ul class="mt-12 max-w-[62ch]">
           {posts.map((post) => (
@@ -41,8 +62,10 @@ const posts = await getPosts();
                 </time>
 
                 <h2 class="mt-2 text-lg font-semibold tracking-tight sm:text-xl">
+                  {/* Записи живут только по-английски — ссылка всегда
+                      на адрес без языкового префикса. */}
                   <a
-                    href={href(`/devlog/${post.id}`)}
+                    href={localePath(defaultLang, `/devlog/${post.id}`)}
                     class="text-ink transition-colors hover:text-name"
                   >
                     {post.data.title}
@@ -52,9 +75,7 @@ const posts = await getPosts();
                 <p class="mt-2 leading-relaxed text-ink-dim">{post.data.summary}</p>
 
                 {import.meta.env.DEV && post.data.draft && (
-                  <p class="mt-2 font-mono text-xs text-warning">
-                    draft — не попадёт в сборку
-                  </p>
+                  <p class="mt-2 font-mono text-xs text-warning">{s.devlog.draftNote}</p>
                 )}
               </article>
             </li>

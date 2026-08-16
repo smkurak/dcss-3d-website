@@ -1,17 +1,31 @@
 ---
-import Base from '../layouts/Base.astro';
-import { site } from '../config';
+import Base from '../../layouts/Base.astro';
+import { defaultLang, langCodes, t, type Lang } from '../../i18n';
 
 /**
  * Источники и инструменты.
  *
  * Для этого проекта страница не формальность: ключевой принцип из библии —
  * асимметрия вклада. Игра целиком чужая, своё здесь только рендер и интерфейс.
- * Проговорить это списком честнее, чем одной ссылкой в подвале.
  *
- * `meta` набирается моноширинным (лицензии, авторы — машинная справка),
- * `note` — гротеском, это наш текст.
+ * Переводятся заголовки, вводки и пояснения. НЕ переводятся имена собственные
+ * и строки лицензий (`meta`): «GPL v2 or later», «SIL OFL 1.1» и копирайты —
+ * это юридические формулировки, их перевод не имеет силы и только путает.
  */
+export function getStaticPaths() {
+  return langCodes.map((lang) => ({
+    params: { lang: lang === defaultLang ? undefined : lang },
+    props: { lang },
+  }));
+}
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+
 interface Item {
   name: string;
   url: string;
@@ -21,11 +35,8 @@ interface Item {
 
 const groups: Array<{ title: string; lead?: string; items: Item[] }> = [
   {
-    title: 'The game',
-    lead:
-      'Everything you actually play — rules, mechanics, balance, dungeon generation, ' +
-      'monster behaviour, every line of item and spell text — comes from upstream ' +
-      'and is not modified here.',
+    title: s.credits.groups.game.title,
+    lead: s.credits.groups.game.lead,
     items: [
       {
         name: 'Dungeon Crawl Stone Soup',
@@ -35,41 +46,39 @@ const groups: Array<{ title: string; lead?: string; items: Item[] }> = [
     ],
   },
   {
-    title: 'Built with',
+    title: s.credits.groups.builtWith.title,
     items: [
-      { name: 'Unity', url: 'https://unity.com', note: 'engine and renderer for the client' },
-      { name: 'Astro', url: 'https://astro.build', note: 'this site' },
-      { name: 'Tailwind CSS', url: 'https://tailwindcss.com', note: 'styles' },
-      { name: 'ffmpeg', url: 'https://ffmpeg.org', note: 'the clip and the screenshots' },
+      { name: 'Unity', url: 'https://unity.com', note: s.credits.notes.unity },
+      { name: 'Astro', url: 'https://astro.build', note: s.credits.notes.astro },
+      { name: 'Tailwind CSS', url: 'https://tailwindcss.com', note: s.credits.notes.tailwind },
+      { name: 'ffmpeg', url: 'https://ffmpeg.org', note: s.credits.notes.ffmpeg },
     ],
   },
   {
-    title: 'Typefaces',
-    lead:
-      'Both are the same files the client interface uses, subset and served from ' +
-      'this domain — no font is fetched from anywhere else.',
+    title: s.credits.groups.typefaces.title,
+    lead: s.credits.groups.typefaces.lead,
     items: [
       {
         name: 'Iosevka',
         url: 'https://typeof.net/Iosevka/',
         meta: 'SIL OFL 1.1 · © Renzhi Li',
-        note: 'anything the machine says',
+        note: s.credits.notes.iosevka,
       },
       {
         name: 'Manrope',
         url: 'https://github.com/sharanda/manrope',
         meta: 'SIL OFL 1.1 · © The Manrope Project Authors',
-        note: 'anything we say',
+        note: s.credits.notes.manrope,
       },
     ],
   },
   {
-    title: 'Hosting',
+    title: s.credits.groups.hosting.title,
     items: [
       {
         name: 'GitHub Pages',
         url: 'https://pages.github.com',
-        note: 'static files, nothing running on a server',
+        note: s.credits.notes.pages,
       },
     ],
   },
@@ -77,18 +86,19 @@ const groups: Array<{ title: string; lead?: string; items: Item[] }> = [
 ---
 
 <Base
-  title={`Credits — ${site.name}`}
-  description="The game, the tools and the typefaces this project is built on."
+  lang={lang}
+  path="/credits"
+  title={`${s.credits.title} — DCSS 3D`}
+  description={s.credits.description}
 >
   <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
     <h1
       class="text-[clamp(1.6rem,1.2rem+1.6vw,2.25rem)] font-semibold tracking-tight"
     >
-      Credits
+      {s.credits.title}
     </h1>
     <p class="mt-4 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
-      This project is a renderer attached to someone else's game. The list below is
-      who did the rest.
+      {s.credits.lead}
     </p>
 
     <div class="mt-12 flex max-w-[62ch] flex-col gap-12">
@@ -114,9 +124,7 @@ const groups: Array<{ title: string; lead?: string; items: Item[] }> = [
                   >
                     {item.name}
                   </a>
-                  {item.note && (
-                    <span class="text-ink-dim"> — {item.note}</span>
-                  )}
+                  {item.note && <span class="text-ink-dim"> — {item.note}</span>}
                   {item.meta && (
                     <span class="mt-1 block font-mono text-xs text-ink-dim">
                       {item.meta}
@@ -130,11 +138,11 @@ const groups: Array<{ title: string; lead?: string; items: Item[] }> = [
       }
     </div>
 
-    <p class="mt-14 max-w-[62ch] border-t border-rule/30 pt-6 text-sm leading-relaxed text-ink-dim">
-      Font licences are kept in the site repository under
-      {' '}
-      <span class="font-mono text-xs">vendor/licenses/</span>, as the SIL Open Font
-      License requires when the files are redistributed.
+    <p
+      class="mt-14 max-w-[62ch] border-t border-rule/30 pt-6 text-sm leading-relaxed text-ink-dim"
+    >
+      {s.credits.licences.before}
+      <span class="font-mono text-xs">vendor/licenses/</span>{s.credits.licences.after}
     </p>
   </section>
 </Base>

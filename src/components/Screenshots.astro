@@ -1,61 +1,44 @@
 ---
 import media from '../data/media.json';
 import Shot from './Shot.astro';
-
-const shots = media.shots;
+import { t, type Lang } from '../i18n';
 
 /**
  * Скриншоты. Размеры берутся из src/data/media.json — его пишет
  * scripts/build-media.mjs, поэтому width/height всегда настоящие
  * и картинки не дёргают вёрстку при загрузке.
  *
- * Подписи и alt — руками: только то, что на снимке действительно есть.
- * Вёрстка одной панели живёт в Shot.astro.
+ * Подписи и alt переведены и лежат в src/i18n/ui.ts, ключ — id снимка.
+ * Названия из игры (Foxfire, Dungeon:1) внутри них не переводятся.
+ *
+ * Вёрстка одной панели — в Shot.astro.
  */
 
-const captions: Record<string, { alt: string; caption: string }> = {
-  screen__01: {
-    alt:
-      'Third-person view of a stone dungeon corridor on Dungeon:1. The character panel, ' +
-      'minimap and inventory run down the right edge; the message log sits along the bottom.',
-    caption: 'third-person camera',
-  },
-  screen__02: {
-    alt:
-      'The character standing in shallow water beside a staircase, with the message log ' +
-      'reporting the terrain underfoot.',
-    caption: 'shallow water, staircase',
-  },
-  screen__03: {
-    alt:
-      'Top-down view of a dungeon level with monsters and items marked on the floor, and ' +
-      'an encounter warning highlighted in the message log.',
-    caption: 'top-down camera',
-  },
-  screen__04: {
-    alt:
-      'A monster description panel for a bat opened over the 3D view, set in the same ' +
-      'monospace the game itself uses.',
-    caption: 'monster description — game text, monospace',
-  },
-  screen__05: {
-    alt:
-      'A Djinni magician casting Foxfire, two glowing orbs lighting the surrounding stone.',
-    caption: 'foxfire',
-  },
-};
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const s = t(lang);
+
+// Ключи словаря — те же id, что в манифесте. Если снимок появится в
+// media.json раньше, чем подпись к нему, страница не упадёт: alt останется
+// пустым, а подпись — незаполненной, и это будет видно при вычитке.
+const shots = media.shots;
+const copy = s.shots as Record<string, { caption: string; alt: string } | undefined>;
 
 const [lead, ...rest] = shots;
 ---
 
 <section aria-labelledby="shots-heading" class="mx-auto max-w-5xl px-5 sm:px-8">
-  <h2 id="shots-heading" class="sr-only">Screenshots</h2>
+  <h2 id="shots-heading" class="sr-only">{s.home.screenshotsHeading}</h2>
 
   <div class="flex flex-col gap-4">
     <Shot
       shot={lead}
-      alt={captions[lead.id]?.alt ?? ''}
-      caption={captions[lead.id]?.caption ?? ''}
+      alt={copy[lead.id]?.alt ?? ''}
+      caption={copy[lead.id]?.caption ?? ''}
+      openLabel={s.home.openFullSize}
       fallbackWidth={1600}
       sizes="(min-width: 1024px) 960px, 100vw"
     />
@@ -65,8 +48,9 @@ const [lead, ...rest] = shots;
         rest.map((shot) => (
           <Shot
             shot={shot}
-            alt={captions[shot.id]?.alt ?? ''}
-            caption={captions[shot.id]?.caption ?? ''}
+            alt={copy[shot.id]?.alt ?? ''}
+            caption={copy[shot.id]?.caption ?? ''}
+            openLabel={s.home.openFullSize}
             fallbackWidth={800}
             sizes="(min-width: 1024px) 472px, (min-width: 640px) 50vw, 100vw"
           />

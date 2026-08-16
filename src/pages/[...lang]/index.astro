@@ -1,0 +1,162 @@
+---
+import Base from '../../layouts/Base.astro';
+import HeroVideo from '../../components/HeroVideo.astro';
+import Screenshots from '../../components/Screenshots.astro';
+import { specs } from '../../config';
+import { defaultLang, langCodes, localePath, t } from '../../i18n';
+import { getPosts, isoDate } from '../../lib/devlog';
+
+/**
+ * Лендинг на четырёх языках.
+ *
+ * `[...lang]` — rest-параметр, он умеет быть пустым: для английского
+ * params.lang = undefined, и страница собирается в корень (/), а не в /en/.
+ * Так уже разосланные ссылки и og-карточка продолжают работать.
+ */
+export function getStaticPaths() {
+  return langCodes.map((lang) => ({
+    params: { lang: lang === defaultLang ? undefined : lang },
+    props: { lang },
+  }));
+}
+
+// Тип props выводится из getStaticPaths выше — отдельный interface Props
+// здесь был бы неиспользуемым дублем.
+const { lang } = Astro.props;
+const s = t(lang);
+
+// Самая свежая запись — показывается под блоком характеристик как признак
+// того, что проект жив. Постов может не быть вовсе, отсюда проверка ниже.
+const [latest] = await getPosts();
+
+const toneClass = {
+  none: 'text-ink',
+  hp: 'text-hp',
+  warning: 'text-warning',
+} as const;
+---
+
+<Base lang={lang} path="/">
+  {/* --- Первый экран ------------------------------------------------------ */}
+  <section class="mx-auto max-w-5xl px-5 pb-12 pt-12 sm:px-8 sm:pb-16 sm:pt-20">
+    <h1
+      class="max-w-[19ch] text-[clamp(1.9rem,1.25rem+2.7vw,3.1rem)] font-semibold leading-[1.1] tracking-tight text-balance"
+    >
+      {s.home.heading}
+    </h1>
+
+    <p class="mt-5 max-w-[54ch] text-[1.0625rem] leading-relaxed text-ink-dim">
+      {s.home.subheading}
+    </p>
+
+    {/*
+      Кнопок на первом экране нет намеренно, обеих.
+
+      GitHub: на лендинге про 3D-клиент «GitHub» читается как «исходники
+      клиента», а вёл бы в репозиторий этого сайта. Исходники клиента пока
+      закрыты; факт об этом стоит в блоке характеристик ниже. Откроется
+      репозиторий — кнопка вернётся сюда и будет вести куда обещает.
+
+      Devlog: ссылка на него есть в шапке, и вторая тут же под ней была
+      дублем. К тому же наверху страницы вопрос «где следить» ещё не задан —
+      он возникает после блока характеристик, где написано, что сборок нет.
+
+      Пока скачивать нечего, честнее оставить первый экран без призыва
+      к действию, чем изобретать ему занятие.
+    */}
+    <div class="mt-10 sm:mt-12">
+      <HeroVideo label={s.home.heroLabel} />
+    </div>
+  </section>
+
+  {/* --- Три абзаца -------------------------------------------------------- */}
+  <section
+    aria-label={s.home.heading}
+    class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16"
+  >
+    <div class="flex max-w-[62ch] flex-col gap-10 sm:gap-12">
+      {
+        s.home.sections.map((section, i) => (
+          <div>
+            <p class="font-mono text-xs text-ink-dim">
+              {String(i + 1).padStart(2, '0')}
+            </p>
+            <h2 class="mt-2 text-lg font-semibold tracking-tight text-ink sm:text-xl">
+              {section.title}
+            </h2>
+            <p class="mt-3 text-[1.0625rem] leading-[1.75] text-ink-dim">
+              {section.body}
+            </p>
+          </div>
+        ))
+      }
+    </div>
+
+    {/*
+      Технические факты — моноширинным, по правилу из style-guide.md.
+
+      Свёрстано панелью в обводке: ровно так в клиенте выглядит блок
+      характеристик — фон панели, рамка в 1px, две колонки «ключ: значение».
+      Сайт и клиент должны выглядеть одной вещью, а не двумя.
+
+      Ширина в rem, а не 62ch как у текста рядом. `ch` считается по шрифту
+      САМОГО элемента, а здесь он моноширинный и узкий: те же 62ch дают
+      ~434px вместо ~600px у Manrope. 38rem — ширина колонки текста слева.
+
+      Две колонки включаются с md, а не с sm: на 640px их ширины не хватает.
+      Ключи по-русски и по-немецки длиннее английских, поэтому колонка
+      ключа шире (w-32), иначе значение прижималось бы вплотную.
+    */}
+    <dl
+      class="mt-14 grid max-w-[38rem] grid-cols-1 gap-x-10 rounded border border-rule/60 bg-panel px-5 py-3 font-mono text-sm sm:mt-16 md:grid-cols-2"
+    >
+      {
+        specs.map((spec) => (
+          <div class="flex gap-4 py-2">
+            <dt class="w-32 shrink-0 text-ink-dim">{s.home.specKeys[spec.key]}</dt>
+            {/* Классы перечислены строками, а не собраны из tone: Tailwind
+                ищет их в исходнике и вычисленное имя вроде `text-${tone}`
+                не увидит — правило вообще не попадёт в CSS. */}
+            <dd class={toneClass[spec.tone ?? 'none']}>
+              {s.home.specValues[spec.value]}
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    {/* Ссылка стоит здесь, а не на первом экране: строкой выше написано,
+        что сборок нет, и «где следить» — как раз следующий вопрос.
+
+        Вместе с ней — дата последней записи. Для проекта без релизов это
+        единственное доказательство, что он жив: иначе посетителю неоткуда
+        понять, вчера тут что-то происходило или два года назад. */}
+    <p class="mt-5 max-w-[38rem] text-sm leading-relaxed text-ink-dim">
+      {s.home.devlogLine.before}
+      <a
+        href={localePath(lang, '/devlog')}
+        class="text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
+        >{s.home.devlogLine.link}</a
+      >{s.home.devlogLine.after}
+    </p>
+
+    {
+      latest && (
+        <p class="mt-3">
+          {/* defaultLang, а не lang: сами записи существуют только
+              по-английски, локализованных адресов у них нет. */}
+          <a
+            href={localePath(defaultLang, `/devlog/${latest.id}`)}
+            class="inline-flex flex-wrap items-baseline gap-x-3 font-mono text-sm text-ink-dim transition-colors hover:text-ink"
+          >
+            <time datetime={isoDate(latest.data.date)}>{isoDate(latest.data.date)}</time>
+            <span>{latest.data.title}</span>
+          </a>
+        </p>
+      )
+    }
+  </section>
+
+  {/* --- Скриншоты --------------------------------------------------------- */}
+  <Screenshots lang={lang} />
+</Base>

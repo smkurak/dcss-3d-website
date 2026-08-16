@@ -1,0 +1,112 @@
+---
+import { langCodes, languages, localePath, type Lang } from '../i18n';
+
+/**
+ * Переключатель языка — выпадающий список.
+ *
+ * Список, а не строка кодов: языков планируется до двух десятков (по числу
+ * локализаций оригинала), и строкой они не помещаются никуда. Выпадашка
+ * одинаково работает и на четырёх, и на двадцати — меняется только высота,
+ * поэтому у панели стоит max-height с прокруткой.
+ *
+ * Сделано на <details>/<summary>: раскрывается без JS, доступно с клавиатуры
+ * из коробки (Enter/Space), не требует ни библиотеки, ни ARIA-конструкций,
+ * которые пришлось бы писать руками для кнопки со списком. Скрипт ниже
+ * добавляет только две вещи, которых у <details> нет: закрытие по Escape
+ * и по клику мимо.
+ *
+ * Ведёт на ТУ ЖЕ страницу на другом языке, а не на главную: увести человека
+ * с середины чтения на титульную — самый распространённый способ испортить
+ * переключатель.
+ */
+
+interface Props {
+  /** Текущий язык страницы. */
+  lang: Lang;
+  /** Логический путь без префикса языка и base: '/', '/credits', '/devlog'. */
+  path: string;
+}
+
+const { lang, path } = Astro.props;
+---
+
+<details class="lang-switcher relative" data-lang-switcher>
+  <summary
+    class="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 font-mono text-xs text-ink-dim transition-colors hover:text-ink [&::-webkit-details-marker]:hidden"
+    aria-label="Language"
+    title={languages[lang].name}
+  >
+    <span lang={lang}>{languages[lang].name}</span>
+    <svg
+      class="lang-chevron h-3 w-3 transition-transform"
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      aria-hidden="true"
+    >
+      <path d="M3 4.5 L6 7.5 L9 4.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  </summary>
+
+  {/* min-w-max: панель шире кнопки настолько, насколько нужно самому длинному
+      самоназванию. right-0 — прижата к правому краю, иначе на телефоне
+      уезжает за экран. */}
+  <div
+    class="absolute right-0 top-full z-50 mt-1 max-h-[60vh] min-w-max overflow-y-auto rounded border border-rule bg-panel py-1"
+  >
+    <ul>
+      {
+        langCodes.map((code) => {
+          const current = code === lang;
+          return (
+            <li>
+              <a
+                href={localePath(code, path)}
+                hreflang={code}
+                lang={code}
+                aria-current={current ? 'true' : undefined}
+                class:list={[
+                  'block whitespace-nowrap px-3 py-2 text-sm transition-colors hover:bg-window hover:text-ink',
+                  current ? 'text-ink' : 'text-ink-dim',
+                ]}
+              >
+                {languages[code].name}
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</details>
+
+<style>
+  /* Поворот галочки в раскрытом состоянии. Отдельным правилом, а не классом
+     Tailwind: селектор зависит от атрибута open у родителя. */
+  details[open] .lang-chevron {
+    transform: rotate(180deg);
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var el = document.querySelector('[data-lang-switcher]');
+    if (!el) return;
+
+    // <details> не закрывается ни по Escape, ни по клику мимо — браузер
+    // этого не делает. Для меню, открытого поверх текста, и то и другое
+    // ожидаемо, поэтому дописываем руками.
+    document.addEventListener('click', function (event) {
+      if (el.open && !el.contains(event.target)) el.open = false;
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && el.open) {
+        el.open = false;
+        var summary = el.querySelector('summary');
+        if (summary) summary.focus();
+      }
+    });
+  })();
+</script>
