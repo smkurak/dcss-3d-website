@@ -70,9 +70,9 @@ gradient gets encoded as geometry. Asking instead for a grayscale height map and
 letting the engine build the normal cannot carry the defect: direction comes from
 the local slope, and across a tiling texture those slopes cancel.
 
-![Dungeon floor lit by a single key light, using the generated normal map. Neighbouring floor tiles carry the same material but render at noticeably different brightness depending on how each one is rotated.](./tiles-that-did-not-match-before.webp)
+![Dungeon floor lit by a single key light, using the generated normal map. Neighbouring floor tiles carry the same material but render at noticeably different brightness depending on how each one is rotated.](./normal-map-before.webp)
 
-![The same view with the normal built from a height map instead. The floor now reads as one continuous stone surface, with the tile-to-tile brightness differences gone.](./tiles-that-did-not-match-after.webp)
+![The same view with the normal built from a height map instead. The floor now reads as one continuous stone surface, with the tile-to-tile brightness differences gone.](./normal-map-after.webp)
 
 ## Fixing that uncovered an older bug
 
@@ -105,9 +105,9 @@ The defect belongs to the model and gets fixed there, with the UV island shifted
 half a texture on the next export. Until then the material's texture offset moves
 the wrap out to the face edge, where the chamfer hides it.
 
-![Two stone blocks seen from above. The cobble pattern on each top face is cut by a straight line across its middle, with the stones on either side failing to line up.](./tiles-uv-offset-before.webp)
+![Two stone blocks seen from above. The cobble pattern on each top face is cut by a straight line across its middle, with the stones on either side failing to line up.](./uv-offset-before.webp)
 
-![The same two blocks after the texture offset is applied. The cobble pattern runs across each face unbroken, and the only lines left are the chamfered edges of the blocks themselves.](./tiles-uv-offset-after.webp)
+![The same two blocks after the texture offset is applied. The cobble pattern runs across each face unbroken, and the only lines left are the chamfered edges of the blocks themselves.](./uv-offset-after.webp)
 
 ## What this cost
 
