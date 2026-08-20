@@ -1,0 +1,138 @@
+---
+import { langCodes, localePath, t, type Lang } from '../i18n';
+import { LANG_PREF_KEY } from '../lib/lang-pref';
+
+/**
+ * Подсказка «эта страница есть на вашем языке».
+ *
+ * Зачем вообще: сайт по умолчанию английский, и человек, пришедший с реддита,
+ * не обязан догадываться, что наверху есть переключатель — один читатель уже
+ * не догадался.
+ *
+ * Почему не определяем страну по IP: сайт статический, сервера, который видел
+ * бы IP, нет — узнать страну можно только сходив в чужой геосервис. Это ровно
+ * тот сторонний запрос, которого на сайте нет и который обещан в подвале.
+ * navigator.languages даёт то же самое честнее: браузер уже знает, на каких
+ * языках человек читает, потому что человек ему это сам сказал.
+ *
+ * Почему не редиректим молча: ломается кнопка «назад», пересланная ссылка
+ * открывается не тем, чем её отправляли, а поисковый робот получает не то,
+ * что обещано в hreflang. Поэтому только предложение — уйти или остаться
+ * решает человек.
+ *
+ * Разметка всех вариантов отрисована заранее и скрыта, скрипт лишь снимает
+ * hidden с нужного. Так не приходится собирать DOM из строк, а скрытый текст
+ * не тянет шрифты: браузер качает подмножество по unicode-range только под
+ * то, что реально рисуется, — кириллическая строка внутри display:none
+ * не стоит ничего.
+ */
+
+interface Props {
+  /** Язык текущей страницы. */
+  lang: Lang;
+  /** Логический путь без префикса языка и base: '/', '/credits', '/devlog'. */
+  path: string;
+}
+
+const { lang, path } = Astro.props;
+
+// Предлагаем только чужие языки: подсказка «эта страница есть на английском»
+// на английской странице бессмысленна.
+const others = langCodes.filter((code) => code !== lang);
+---
+
+{
+  others.map((code) => (
+    <div
+      hidden
+      data-lang-hint={code}
+      lang={code}
+      class="border-b border-rule/40 bg-panel"
+    >
+      <div class="mx-auto flex min-h-11 max-w-5xl items-center gap-3 px-5 sm:px-8">
+        <a
+          href={localePath(code, path)}
+          hreflang={code}
+          class="font-mono text-xs leading-tight text-ink underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
+        >
+          {t(code).chrome.langHint.offer} →
+        </a>
+
+        {/* Кнопка, а не ссылка: она ничего не открывает, а меняет настройку.
+            44px — минимальная площадь под палец, поэтому у полосы нет
+            вертикальных отступов: высоту задаёт сама кнопка. */}
+        <button
+          type="button"
+          data-lang-hint-dismiss
+          aria-label={t(code).chrome.langHint.dismiss}
+          title={t(code).chrome.langHint.dismiss}
+          class="-mr-3 ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center text-ink-dim transition-colors hover:text-ink"
+        >
+          <svg
+            class="h-3.5 w-3.5"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            aria-hidden="true"
+          >
+            <path d="M3 3 L9 9 M9 3 L3 9" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  ))
+}
+
+{/* is:inline и прямо здесь, сразу за разметкой: скрипт выполняется во время
+    разбора страницы, до того как отрисуется шапка. Полоса появляется вместе
+    со всем остальным, а не доскакивает через полсекунды, сдвигая текст.
+    Вынесенный внешний файл этого не даёт — он выполнится позже. */}
+<script
+  is:inline
+  define:vars={{ CURRENT: lang, SUPPORTED: langCodes, KEY: LANG_PREF_KEY }}
+>
+  (function () {
+    // Явный выбор человека важнее списка языков браузера: если он один раз
+    // сказал, чего хочет, спрашивать снова не нужно.
+    var want = null;
+    try {
+      want = localStorage.getItem(KEY);
+    } catch (e) {
+      // Приватный режим Safari бросает исключение на записи и чтении.
+      // Не повод ломать страницу — просто работаем без памяти.
+    }
+
+    if (!want || SUPPORTED.indexOf(want) === -1) {
+      // navigator.languages отсортирован по убыванию предпочтения. Берём
+      // первый, который у нас вообще есть: если человек поставил английский
+      // выше немецкого, немецкий ему предлагать не надо.
+      var list = navigator.languages || [navigator.language || ''];
+      for (var i = 0; i < list.length; i++) {
+        // 'de-AT' -> 'de': региона у нас нет, различаем только язык.
+        var base = String(list[i]).toLowerCase().split('-')[0];
+        if (SUPPORTED.indexOf(base) !== -1) {
+          want = base;
+          break;
+        }
+      }
+    }
+
+    if (!want || want === CURRENT) return;
+
+    var el = document.querySelector('[data-lang-hint="' + want + '"]');
+    if (!el) return;
+    el.hidden = false;
+
+    var close = el.querySelector('[data-lang-hint-dismiss]');
+    if (close) {
+      close.addEventListener('click', function () {
+        el.hidden = true;
+        // Закрыть — это и есть ответ «мне подходит текущий язык».
+        try {
+          localStorage.setItem(KEY, CURRENT);
+        } catch (e) {}
+      });
+    }
+  })();
+</script>

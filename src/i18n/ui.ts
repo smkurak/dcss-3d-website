@@ -29,6 +29,11 @@ const en = {
     skipToContent: 'Skip to content',
     navDevlog: 'Devlog',
     languageLabel: 'Language',
+    /** Подсказка про язык браузера. Показывается на языке, который предлагаем. */
+    langHint: {
+      offer: 'This page is available in English',
+      dismiss: 'Dismiss',
+    },
     footerUpstream: {
       before: 'The game itself — rules, content and two decades of work — is ',
       after: ', by its own team. This project only renders it.',
@@ -202,6 +207,10 @@ const ru: Strings = {
     skipToContent: 'Перейти к содержимому',
     navDevlog: 'Devlog',
     languageLabel: 'Язык',
+    langHint: {
+      offer: 'Эта страница есть на русском',
+      dismiss: 'Закрыть',
+    },
     footerUpstream: {
       before: 'Сама игра — правила, содержание и два десятилетия работы — это ',
       after: ', сделанная своей командой. Этот проект её только отрисовывает.',
@@ -372,6 +381,10 @@ const de: Strings = {
     skipToContent: 'Zum Inhalt springen',
     navDevlog: 'Devlog',
     languageLabel: 'Sprache',
+    langHint: {
+      offer: 'Diese Seite gibt es auf Deutsch',
+      dismiss: 'Schließen',
+    },
     footerUpstream: {
       before: 'Das Spiel selbst — Regeln, Inhalte und zwei Jahrzehnte Arbeit — ist ',
       after: ', von seinem eigenen Team. Dieses Projekt stellt es lediglich dar.',
@@ -547,6 +560,10 @@ const es: Strings = {
     skipToContent: 'Saltar al contenido',
     navDevlog: 'Devlog',
     languageLabel: 'Idioma',
+    langHint: {
+      offer: 'Esta página está disponible en español',
+      dismiss: 'Cerrar',
+    },
     footerUpstream: {
       before: 'El juego en sí —reglas, contenido y dos décadas de trabajo— es ',
       after: ', de su propio equipo. Este proyecto solo lo representa.',

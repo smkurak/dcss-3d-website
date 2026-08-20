@@ -1,5 +1,6 @@
 ---
 import { langCodes, languages, localePath, type Lang } from '../i18n';
+import { LANG_PREF_KEY } from '../lib/lang-pref';
 
 /**
  * Переключатель языка — выпадающий список.
@@ -31,14 +32,33 @@ const { lang, path } = Astro.props;
 ---
 
 <details class="lang-switcher relative" data-lang-switcher>
+  {/* Рамка и глобус — не украшение. Без них переключатель читался как ещё одна
+      тусклая ссылка рядом с пунктами меню, и его пропускали: сообщение об этом
+      пришло от живого читателя. Рамка сообщает «это орган управления, на него
+      нажимают», глобус узнаётся без чтения и на любом языке — в том числе тем,
+      кто не понимает языка текущей страницы, то есть ровно тем, кому кнопка
+      и нужна. */}
   <summary
-    class="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 font-mono text-xs text-ink-dim transition-colors hover:text-ink [&::-webkit-details-marker]:hidden"
+    class="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded border border-rule px-2.5 font-mono text-xs text-ink transition-colors hover:border-ink-dim hover:bg-panel [&::-webkit-details-marker]:hidden"
     aria-label="Language"
     title={languages[lang].name}
   >
+    <svg
+      class="h-3.5 w-3.5 shrink-0 text-ink-dim"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.25"
+      aria-hidden="true"
+    >
+      <circle cx="8" cy="8" r="6"></circle>
+      <path d="M2 8h12"></path>
+      <path d="M8 2c1.7 1.9 2.6 3.9 2.6 6S9.7 12.1 8 14C6.3 12.1 5.4 10.1 5.4 8S6.3 3.9 8 2Z"
+      ></path>
+    </svg>
     <span lang={lang}>{languages[lang].name}</span>
     <svg
-      class="lang-chevron h-3 w-3 transition-transform"
+      class="lang-chevron h-3 w-3 shrink-0 text-ink-dim transition-transform"
       viewBox="0 0 12 12"
       fill="none"
       stroke="currentColor"
@@ -89,10 +109,23 @@ const { lang, path } = Astro.props;
   }
 </style>
 
-<script is:inline>
+<script is:inline define:vars={{ KEY: LANG_PREF_KEY }}>
   (function () {
     var el = document.querySelector('[data-lang-switcher]');
     if (!el) return;
+
+    // Выбор языка здесь — самый явный ответ на вопрос «на каком читать».
+    // Запоминаем, чтобы подсказка про язык браузера (LangHint.astro) больше
+    // не лезла: человек уже сказал, чего хочет, руками.
+    el.addEventListener('click', function (event) {
+      var link = event.target.closest ? event.target.closest('a[hreflang]') : null;
+      if (!link || !el.contains(link)) return;
+      try {
+        localStorage.setItem(KEY, link.getAttribute('hreflang'));
+      } catch (e) {
+        // Приватный режим Safari. Переход всё равно состоится.
+      }
+    });
 
     // <details> не закрывается ни по Escape, ни по клику мимо — браузер
     // этого не делает. Для меню, открытого поверх текста, и то и другое

@@ -4,6 +4,7 @@ import '../styles/global.css';
 // ровно тот же, что подставится в url() внутри @font-face. Нужен для preload.
 import manropeLatin from '../assets/fonts/manrope-var-latin.woff2?url';
 import manropeCyrillic from '../assets/fonts/manrope-var-cyrillic.woff2?url';
+import LangHint from '../components/LangHint.astro';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import { site } from '../config';
 import { alternateLinks, languages, localePath, t, type Lang } from '../i18n';
@@ -137,6 +138,10 @@ const here = strip(Astro.url.pathname);
     >
       {s.chrome.skipToContent}
     </a>
+
+    {/* Только на страницах, у которых переводы действительно есть. На записи
+        devlog обещать «эта страница есть по-немецки» нельзя — её там нет. */}
+    {hasTranslations && <LangHint lang={lang} path={path} />}
 
     <header class="border-b border-rule/40">
       {/* flex-wrap: на узком экране переключатель уезжает на вторую строку,
