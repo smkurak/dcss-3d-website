@@ -1,17 +1,10 @@
 ---
-import media from '../data/media.json';
-import { asset } from '../lib/paths';
+import Clip from './Clip.astro';
 
 /**
- * Первый экран. Вместо гифки на 74 МБ — видео на 522 КБ.
- *
- * Гифка не сжимает разницу между кадрами: каждый кадр лежит целиком.
- * Видеокодек делает ровно это, отсюда разница в ~140 раз. Два формата,
- * потому что VP9/webm не понимает старый Safari, а H.264/mp4 понимают все.
- * Браузер берёт первый <source>, который умеет.
- *
- * Размеры берутся из src/data/media.json, который пишет build-media.mjs:
- * пережали видео из другого исходника — рамка подстроится сама.
+ * Первый экран. Вся механика — в Clip.astro, здесь только имя клипа:
+ * герой и клипы внутри записей devlog устроены одинаково, и держать
+ * для них два разных компонента значило бы чинить всё дважды.
  */
 
 interface Props {
@@ -20,90 +13,6 @@ interface Props {
 }
 
 const { label } = Astro.props;
-const { width, height } = media.hero;
 ---
 
-<figure class="relative overflow-hidden rounded border border-rule/60 bg-panel">
-  {/*
-    autoplay в разметке НЕ стоит намеренно. Раньше атрибут был, а скрипт
-    снимал его при prefers-reduced-motion — то есть у попросившего тишины
-    ролик всё-таки успевал дёрнуться. Теперь наоборот: по умолчанию тихо,
-    проигрывание включает скрипт тем, кто против не был.
-
-    Цена — без JS видео не стартует. Но постер остаётся на месте, а он и
-    так несёт всю информацию кадра.
-
-    aspect-ratio инлайном, а не классом: значение приходит из манифеста,
-    а Tailwind собирает классы по исходнику и динамический не увидит.
-  */}
-  <video
-    id="hero-video"
-    class="block w-full"
-    style={`aspect-ratio:${width}/${height}`}
-    width={width}
-    height={height}
-    poster={asset('media/hero-poster.webp')}
-    muted
-    loop
-    playsinline
-    preload="metadata"
-    disablepictureinpicture
-    aria-label={label}
-  >
-    <source src={asset('media/hero.webm')} type="video/webm" />
-    <source src={asset('media/hero.mp4')} type="video/mp4" />
-    {/* Ни webm, ни mp4 не проигрались — показываем тот же кадр картинкой. */}
-    <img
-      src={asset('media/hero-poster.webp')}
-      width={width}
-      height={height}
-      alt={label}
-      class="block w-full"
-    />
-  </video>
-
-  <button
-    type="button"
-    id="hero-toggle"
-    aria-controls="hero-video"
-    class="absolute bottom-2 right-2 hidden rounded border border-rule/60 bg-window/85 px-2.5 py-1.5 font-mono text-xs text-ink-dim backdrop-blur-sm transition-colors hover:text-ink sm:bottom-3 sm:right-3"
-  >
-    play
-  </button>
-</figure>
-
-<script is:inline>
-  (function () {
-    var video = document.getElementById('hero-video');
-    var button = document.getElementById('hero-toggle');
-    if (!video || !button) return;
-
-    // Кнопку показываем только при живом JS: без него она бы ничего не делала.
-    button.classList.remove('hidden');
-
-    function sync() {
-      var paused = video.paused;
-      button.textContent = paused ? 'play' : 'pause';
-      button.setAttribute('aria-label', paused ? 'Play the clip' : 'Pause the clip');
-    }
-
-    video.addEventListener('play', sync);
-    video.addEventListener('pause', sync);
-
-    button.addEventListener('click', function () {
-      if (video.paused) video.play();
-      else video.pause();
-    });
-
-    // Запускаем сами — но только если не просили не анимировать.
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      // play() возвращает промис и может быть отклонён политикой браузера.
-      // Тогда просто останется постер и кнопка play — это рабочее состояние,
-      // а не ошибка, поэтому молча.
-      var started = video.play();
-      if (started && typeof started.catch === 'function') started.catch(function () {});
-    }
-
-    sync();
-  })();
-</script>
+<Clip name="hero" label={label} />

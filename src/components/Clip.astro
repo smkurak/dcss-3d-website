@@ -1,0 +1,138 @@
+---
+import media from '../data/media.json';
+import { asset } from '../lib/paths';
+
+/**
+ * Видеоклип: первый экран и клипы внутри записей devlog.
+ *
+ * Гифок на сайте нет вовсе. Гифка хранит каждый кадр целиком, видеокодек
+ * кодирует только изменения — для записи интерфейса это разница в два порядка
+ * (74 МБ против 0.5 МБ на герое). Файлы готовит scripts/build-media.mjs,
+ * размеры берутся из src/data/media.json, поэтому пережали из другого
+ * исходника — рамка подстроится сама.
+ *
+ * Два формата: VP9/webm не понимает старый Safari, H.264/mp4 понимают все.
+ * Браузер берёт первый <source>, который умеет.
+ *
+ * autoplay в разметке НЕ стоит намеренно: по умолчанию тихо, проигрывание
+ * включает скрипт тем, кто не просил тишины через prefers-reduced-motion.
+ * Без JS остаётся постер — он несёт всю информацию кадра.
+ */
+
+interface Props {
+  /**
+   * Имя клипа. 'hero' — первый экран; всё остальное ищется среди клипов
+   * devlog, то есть в public/media/devlog/<имя>.*
+   */
+  name: string;
+  /** Что происходит на записи. Уходит в aria-label и в alt запасной картинки. */
+  label: string;
+  /** Подпись над клипом, как заголовок панели в клиенте. Необязательна. */
+  caption?: string;
+}
+
+const { name, label, caption } = Astro.props;
+
+const isHero = name === 'hero';
+const path = isHero ? 'media/hero' : `media/devlog/${name}`;
+const size = isHero
+  ? media.hero
+  : (media.clips as Record<string, { width: number; height: number } | undefined>)[name];
+
+if (!size) {
+  throw new Error(
+    `Clip "${name}": нет в src/data/media.json. Положите исходник в ` +
+      `media-src/devlog/ и выполните npm run media.`,
+  );
+}
+
+// Идентификатор из имени: он уникален в пределах страницы и читается в разметке.
+const id = `clip-${name}`;
+---
+
+<figure class="relative overflow-hidden rounded border border-rule/60 bg-panel">
+  {
+    caption && (
+      <figcaption class="border-b border-rule/30 px-3 py-1.5 font-mono text-xs text-ink-dim">
+        {caption}
+      </figcaption>
+    )
+  }
+
+  <div class="relative">
+    <video
+      id={id}
+      data-clip
+      class="block w-full"
+      style={`aspect-ratio:${size.width}/${size.height}`}
+      width={size.width}
+      height={size.height}
+      poster={asset(`${path}-poster.webp`)}
+      muted
+      loop
+      playsinline
+      preload="metadata"
+      disablepictureinpicture
+      aria-label={label}
+    >
+      <source src={asset(`${path}.webm`)} type="video/webm" />
+      <source src={asset(`${path}.mp4`)} type="video/mp4" />
+      {/* Ни webm, ни mp4 не проигрались — показываем тот же кадр картинкой. */}
+      <img
+        src={asset(`${path}-poster.webp`)}
+        width={size.width}
+        height={size.height}
+        alt={label}
+        class="block w-full"
+      />
+    </video>
+
+    <button
+      type="button"
+      data-clip-toggle={id}
+      aria-controls={id}
+      class="absolute bottom-2 right-2 hidden rounded border border-rule/60 bg-window/85 px-2.5 py-1.5 font-mono text-xs text-ink-dim backdrop-blur-sm transition-colors hover:text-ink sm:bottom-3 sm:right-3"
+    >
+      play
+    </button>
+  </div>
+</figure>
+
+{/*
+  Скрипт без is:inline: Astro собирает его один раз на страницу, сколько бы
+  клипов на ней ни стояло, и обслуживает их все через data-атрибуты.
+  Гонки с автозапуском тут нет — атрибута autoplay в разметке нет вовсе,
+  проигрывание начинает сам скрипт.
+*/}
+<script>
+  const quiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll<HTMLVideoElement>('video[data-clip]').forEach((video) => {
+    const button = document.querySelector<HTMLButtonElement>(
+      `[data-clip-toggle="${video.id}"]`,
+    );
+    if (!button) return;
+
+    // Кнопку показываем только при живом JS: без него она бы ничего не делала.
+    button.classList.remove('hidden');
+
+    const sync = () => {
+      const paused = video.paused;
+      button.textContent = paused ? 'play' : 'pause';
+      button.setAttribute('aria-label', paused ? 'Play the clip' : 'Pause the clip');
+    };
+
+    video.addEventListener('play', sync);
+    video.addEventListener('pause', sync);
+    button.addEventListener('click', () => {
+      if (video.paused) video.play();
+      else video.pause();
+    });
+
+    // play() может быть отклонён политикой браузера. Тогда останется постер
+    // и кнопка play — это рабочее состояние, а не ошибка, поэтому молча.
+    if (!quiet) video.play().catch(() => {});
+
+    sync();
+  });
+</script>

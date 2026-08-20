@@ -6,7 +6,11 @@ import { glob } from 'astro/loaders';
 import { z } from 'zod';
 
 /**
- * Devlog — обычные markdown-файлы в src/content/devlog/.
+ * Devlog — markdown-файлы в src/content/devlog/.
+ *
+ * .md для текстовых записей, .mdx — когда нужен клип или картинка
+ * (в .mdx работают компоненты, см. docs/devlog-howto.md). Обе формы
+ * лежат рядом и обрабатываются одинаково.
  * Никакой CMS: пост это файл, история правок — история git.
  *
  * Имя файла становится адресом: `render-distance.md` -> /devlog/render-distance/
@@ -17,7 +21,7 @@ import { z } from 'zod';
  * страницу с дырой.
  */
 const devlog = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/devlog' }),
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/devlog' }),
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),

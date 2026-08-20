@@ -39,6 +39,14 @@ const HERO_WIDTH = 1440;
 // Две ширины скриншотов под srcset: 1600 для 2x-экранов, 800 для телефонов.
 const SHOT_WIDTHS = [1600, 800];
 
+// Клипы для записей devlog. Колонка текста ~600px, 1200 закрывает 2x-экраны;
+// шире — только лишние байты, читать всё равно будут в колонке.
+const CLIP_SRC = join(SRC, 'devlog');
+const CLIP_OUT = join(OUT, 'devlog');
+const CLIP_WIDTH = 1200;
+// Что принимаем на вход: запись экрана в любом ходовом виде, включая гифку.
+const CLIP_INPUTS = /\.(gif|mp4|mov|mkv|webm|avi)$/i;
+
 const kb = (p) => (statSync(p).size / 1024).toFixed(0);
 const mb = (p) => (statSync(p).size / 1024 / 1024).toFixed(1);
 
@@ -129,11 +137,69 @@ function buildShots() {
   return manifest;
 }
 
+/**
+ * Клипы для записей devlog: media-src/devlog/имя.gif -> public/media/devlog/имя.*
+ *
+ * Тот же приём, что и с героем: гифка хранит каждый кадр целиком, видеокодек
+ * кодирует только изменения. Для записи экрана с интерфейсом это разница
+ * в два порядка. Поэтому в devlog кладутся клипы, а не гифки — иначе первая
+ * же запись сайта, объясняющая этот переход, противоречила бы сама себе.
+ */
+function buildClips() {
+  if (!existsSync(CLIP_SRC)) return {};
+
+  const files = readdirSync(CLIP_SRC).filter((f) => CLIP_INPUTS.test(f)).sort();
+  if (!files.length) return {};
+
+  mkdirSync(CLIP_OUT, { recursive: true });
+  console.log(`клипы devlog: ${files.length} шт.`);
+
+  const clips = {};
+
+  for (const file of files) {
+    const src = join(CLIP_SRC, file);
+    const name = basename(file, extname(file));
+    // Ширину не увеличиваем: если исходник уже уже 1200, апскейл только
+    // раздует файл, не добавив ничего глазу.
+    const scale = `scale='min(${CLIP_WIDTH},iw)':-2:flags=lanczos`;
+
+    ffmpeg(['-i', src, '-vf', scale,
+      '-c:v', 'libvpx-vp9', '-crf', '34', '-b:v', '0',
+      '-row-mt', '1', '-deadline', 'good', '-cpu-used', '2',
+      '-pix_fmt', 'yuv420p', '-an', join(CLIP_OUT, `${name}.webm`)]);
+
+    ffmpeg(['-i', src, '-vf', scale,
+      '-c:v', 'libx264', '-crf', '26', '-preset', 'slow', '-profile:v', 'high',
+      '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an',
+      join(CLIP_OUT, `${name}.mp4`)]);
+
+    // Постер — первый кадр. У короткого клипа секунды может не быть,
+    // поэтому берём начало, а не -ss 1.0 как у героя.
+    ffmpeg(['-i', src, '-vframes', '1', '-vf', scale,
+      '-c:v', 'libwebp', '-quality', '72', join(CLIP_OUT, `${name}-poster.webp`)]);
+
+    const { w, h } = probeSize(join(CLIP_OUT, `${name}.webm`));
+    clips[name] = { width: w, height: h };
+
+    const total =
+      statSync(join(CLIP_OUT, `${name}.webm`)).size +
+      statSync(join(CLIP_OUT, `${name}.mp4`)).size +
+      statSync(join(CLIP_OUT, `${name}-poster.webp`)).size;
+    console.log(
+      `   ${name}`.padEnd(28) +
+      `${w}x${h}  ${(total / 1024).toFixed(0)} КБ на три файла  (из ${mb(src)} МБ)`,
+    );
+  }
+
+  return clips;
+}
+
 requireFfmpeg();
 mkdirSync(OUT, { recursive: true });
 
 const hero = buildHero();
 const shots = buildShots();
+const clips = buildClips();
 
 // Манифест перезаписывается целиком, поэтому пишем его только когда собралось
 // и то и другое: иначе неудачный запуск (нет исходника) молча обнулил бы
@@ -142,9 +208,9 @@ if (hero && shots.length) {
   mkdirSync(dirname(MANIFEST), { recursive: true });
   writeFileSync(
     MANIFEST,
-    JSON.stringify({ hero: { width: hero.w, height: hero.h }, shots }, null, 2) + '\n',
+    JSON.stringify({ hero: { width: hero.w, height: hero.h }, shots, clips }, null, 2) + '\n',
   );
-  console.log(`-> src/data/media.json (герой ${hero.w}x${hero.h}, снимков ${shots.length})`);
+  console.log(`-> src/data/media.json (герой ${hero.w}x${hero.h}, снимков ${shots.length}, клипов ${Object.keys(clips).length})`);
 } else {
   console.error('!! манифест не перезаписан: собралось не всё');
 }

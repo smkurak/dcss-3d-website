@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -31,7 +32,11 @@ export default defineConfig({
   // четыре языковые версии не конкурировали как дубликаты. Маршрутизация
   // сделана вручную через [...lang], встроенный роутинг Astro не включаем —
   // иначе два механизма делали бы одно и то же по-разному.
+  // mdx — ради клипов и картинок в записях devlog: обычный markdown не умеет
+  // компоненты, а <video> нужен базо-зависимый путь, постер и два формата.
+  // Записи без клипов остаются обычным .md, обе формы живут рядом.
   integrations: [
+    mdx(),
     sitemap({
       i18n: {
         defaultLocale: 'en',
